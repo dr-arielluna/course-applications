@@ -107,6 +107,10 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid 
       </div>
       <div class="row" style="margin-top:12px"><button class="btn" id="addRule">+ Add rule</button>
         <button class="btn sm" id="loadStarter">Add an example</button></div>
+      <div class="row" style="margin-top:10px"><span class="muted" style="font-size:.78rem;font-weight:800">Demo presets ▶</span>
+        <button class="btn sm" data-preset="leaky">Leaky rules</button>
+        <button class="btn sm" data-preset="tuned">Tuned policy</button>
+        <button class="btn sm" data-preset="shadow">Shadowed order</button></div>
       <div id="ruleList"></div>
       <p class="muted" id="defaultRow" style="margin-top:8px;font-size:.82rem">⤷ default: <b>DENY</b> everything not matched above.</p>
       <div class="row spread" style="margin-top:12px">
@@ -213,7 +217,7 @@ document.getElementById("loadStarter").onclick=()=>{
 };
 document.getElementById("clearRules").onclick=()=>{rules=[];lastEval=null;renderRules();renderFlows();document.getElementById("results").hidden=true;};
 
-document.getElementById("run").onclick=()=>{
+function runTest(){
   lastEval=FLOWS.map(decide);
   let ok=0,hole=0,broke=0;
   FLOWS.forEach((f,i)=>{const d=lastEval[i]; if(d.allowed===f.allow)ok++; else if(d.allowed&&!f.allow)hole++; else broke++;});
@@ -241,7 +245,31 @@ document.getElementById("run").onclick=()=>{
   document.getElementById("callouts").innerHTML=c;
   document.getElementById("results").hidden=false;
   document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+document.getElementById("run").onclick=runTest;
+
+const FW_PRESETS={
+  leaky:[{action:"allow",src:"vendor",dst:"any",port:"any"},
+         {action:"allow",src:"internet",dst:"dmz",port:"443"},
+         {action:"allow",src:"dmz",dst:"db",port:"1433"},
+         {action:"allow",src:"pos",dst:"db",port:"1433"},
+         {action:"allow",src:"internal",dst:"internet",port:"443"}],
+  tuned:[{action:"allow",src:"internet",dst:"dmz",port:"443"},
+         {action:"allow",src:"dmz",dst:"db",port:"1433"},
+         {action:"allow",src:"pos",dst:"db",port:"1433"},
+         {action:"allow",src:"internal",dst:"internet",port:"443"},
+         {action:"allow",src:"vendor",dst:"ops",port:"443"}],
+  shadow:[{action:"deny",src:"internet",dst:"any",port:"any"},
+          {action:"allow",src:"internet",dst:"dmz",port:"443"},
+          {action:"allow",src:"dmz",dst:"db",port:"1433"},
+          {action:"allow",src:"pos",dst:"db",port:"1433"},
+          {action:"allow",src:"internal",dst:"internet",port:"443"},
+          {action:"allow",src:"vendor",dst:"ops",port:"443"}]
 };
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+  rules=JSON.parse(JSON.stringify(FW_PRESETS[b.dataset.preset]||[]));
+  renderRules(); runTest();
+});
 
 renderZonesSelects();
 renderFlows();

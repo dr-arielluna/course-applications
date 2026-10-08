@@ -87,6 +87,7 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700;color:var(--accent
     <h2>How a Snort rule reads</h2>
     <div class="rulebar">alert tcp any any -&gt; $HOME_NET <b>80</b> (msg:"SQL injection"; content:<b>"' OR '1'='1"</b>; nocase; sid:1000001;)</div>
     <p class="muted" style="margin-top:8px">A rule = an <b>action</b> on a <b>protocol</b> and <b>port</b>, firing when the <b>content</b> text appears in the traffic. Below you build the <code>port</code>, <code>content</code>, and <code>nocase</code> parts.</p>
+    <p class="muted" style="margin-top:4px;font-size:.82rem">The rules shown are valid Snort <code>content</code>-rule syntax. This lab runs a simplified matcher for teaching — real Snort adds regex (<code>pcre</code>), flow state, thresholds and more.</p>
   </div>
 
   <div class="card" id="challenge">
@@ -122,6 +123,10 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700;color:var(--accent
       <label class="check"><input type="checkbox" id="nocase"> nocase (ignore upper/lowercase)</label>
       <div class="row" style="margin-top:12px"><button class="btn" id="addRule">+ Add rule</button>
         <button class="btn sm" id="loadStarter">Load an example</button></div>
+      <div class="row" style="margin-top:10px"><span class="muted" style="font-size:.78rem;font-weight:800">Demo presets ▶</span>
+        <button class="btn sm" data-preset="one">One rule</button>
+        <button class="btn sm" data-preset="broad">Too broad</button>
+        <button class="btn sm" data-preset="tuned">Tuned set</button></div>
       <div id="ruleList"></div>
       <div class="row spread" style="margin-top:14px">
         <button class="btn sm" id="clearRules">Clear rules</button>
@@ -247,7 +252,7 @@ document.getElementById("loadStarter").onclick=()=>{
 };
 document.getElementById("clearRules").onclick=()=>{rules=[];renderRules();lastResult=null;renderFeed();document.getElementById("results").hidden=true;};
 
-document.getElementById("run").onclick=()=>{
+function runDetection(){
   if(rules.length===0){ addRuleFromForm(); if(rules.length===0) return; }
   const fired=EVENTS.map(ev=>rules.some(r=>matches(r,ev)));
   let tp=0,fp=0,fn=0;
@@ -298,7 +303,22 @@ document.getElementById("run").onclick=()=>{
 
   document.getElementById("results").hidden=false;
   document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+document.getElementById("run").onclick=runDetection;
+
+const SIG_PRESETS={
+  one:[{msg:"SQLi classic",proto:"tcp",port:"80",content:"' OR '1'='1",nocase:false}],
+  broad:[{msg:"too broad",proto:"any",port:"any",content:"OR",nocase:true}],
+  tuned:[{msg:"SQLi",proto:"tcp",port:"80",content:"' OR '1'='1",nocase:false},
+         {msg:"SQLi (encoded)",proto:"tcp",port:"80",content:"%27",nocase:false},
+         {msg:"XSS",proto:"tcp",port:"80",content:"<script",nocase:true},
+         {msg:"Path traversal",proto:"tcp",port:"80",content:"../",nocase:false},
+         {msg:"C2 callout",proto:"udp",port:"53",content:"evil-c2.example",nocase:true}]
 };
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+  rules=JSON.parse(JSON.stringify(SIG_PRESETS[b.dataset.preset]||[]));
+  renderRules(); runDetection();
+});
 
 renderFeed();
 renderRules();
