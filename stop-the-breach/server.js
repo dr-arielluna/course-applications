@@ -31,19 +31,24 @@ const GAME = {
   rounds: [
     { move: "An attacker tricks a ClimaCore employee into handing over their login password.",
       works: ["A"], points: 10,
-      why: "A two-step login (A) makes a stolen password useless on its own — the attacker still can't get in." },
+      why: "A two-step login (A) makes a stolen password useless on its own — the attacker still can't get in.",
+      discuss: "Why can't any tool fully stop phishing? Whose job is a vendor's security — theirs or yours?" },
     { move: "Using that password, the attacker logs in as the vendor and starts roaming Northwind's network.",
       works: ["B", "C"], points: 10,
-      why: "Give the vendor one key only (B), or wall off the network (C), and the attacker can't roam." },
+      why: "Give the vendor one key only (B), or wall off the network (C), and the attacker can't roam.",
+      discuss: "Why do companies give outside vendors broad access in the first place? Convenience vs. security." },
     { move: "The attacker heads for the register (checkout) network.",
       works: ["C", "D"], points: 10,
-      why: "Inside walls (C) should block the jump; the network alarm (D) should flag such an unusual move." },
+      why: "Inside walls (C) should block the jump; the network alarm (D) should flag such an unusual move.",
+      discuss: "The alarm detected this — is detecting enough if nobody acts on it?" },
     { move: "The attacker installs card-stealing software on the registers.",
       works: ["D", "E"], points: 10,
-      why: "The alarm (D) catches brand-new software — but only if a guard (E) actually acts on it." },
+      why: "The alarm (D) catches brand-new software — but only if a guard (E) actually acts on it.",
+      discuss: "Signature tools miss brand-new malware. How do you catch something no one has seen before?" },
     { move: "The software quietly sends the stolen card numbers out of the company.",
       works: ["E", "F"], points: 20,
-      why: "An exit checkpoint (F) notices card data leaving; a guard (E) must respond. Hardest to catch — double points." },
+      why: "An exit checkpoint (F) notices card data leaving; a guard (E) must respond. Hardest to catch — double points.",
+      discuss: "Why is data leaving so much harder to catch than someone breaking in?" },
   ],
   bonus: { prompt: "If Northwind could add only ONE of the six defenses, which would you choose?", points: 10 },
   reveal:
@@ -52,6 +57,11 @@ const GAME = {
     ["The alarm went off.", "Target DID detect it (defense D) — but nobody acted (defense E was missing). An alarm no one answers is useless."],
     ["No inside walls.", "Nothing stopped the jump from the vendor to the registers (defense C was missing)."],
     ["A trusted vendor was the door.", "The outsider's login was the way in (defenses A and B were missing)."],
+  ],
+  debrief: [
+    "No single defense stopped everything — that's defense in depth. Why not just buy the one best firewall?",
+    "Target had most of these tools and still lost. Tools vs. people and process — which really failed?",
+    "If you had budget for only TWO of the six defenses, which two would you buy, and why?",
   ],
 };
 const PUBLIC_DEFENSES = GAME.defenses.map((d) => ({ id: d.id, name: d.name, desc: d.desc }));
@@ -99,10 +109,10 @@ function publicState(room) {
   }
   if (room.phase === "reveal") {
     const r = GAME.rounds[room.round];
-    st.works = r.works; st.why = r.why; st.counts = letterCounts(room);
+    st.works = r.works; st.why = r.why; st.counts = letterCounts(room); st.discuss = r.discuss;
   }
   if (room.phase === "results") {
-    st.reveal = GAME.reveal; st.lessons = GAME.lessons;
+    st.reveal = GAME.reveal; st.lessons = GAME.lessons; st.debrief = GAME.debrief;
   }
   return st;
 }
