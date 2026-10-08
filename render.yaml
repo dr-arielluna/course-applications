@@ -26,3 +26,15 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  - type: web
+    name: firewall-lab
+    runtime: node
+    plan: free
+    rootDir: firewall-lab
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

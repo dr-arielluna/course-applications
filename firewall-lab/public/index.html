@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Firewall Lab</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#eef1f6; --panel:#fff; --panel-2:#f5f7fb; --ink:#1b2430; --muted:#5a6678;
+  --line:#d5dce5; --navy:#1f4e79; --accent:#2e75b6; --good:#2e7d32; --good-bg:#e6f4ea;
+  --bad:#c0392b; --bad-bg:#fbe9e7; --warn:#b7860b; --warn-bg:#fbf3dc;
+  --code:#0f2233; --shadow:0 10px 30px rgba(20,30,50,.12); --radius:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --bg:#0f1420; --panel:#171e2c; --panel-2:#1e2736; --ink:#eaf0f8; --muted:#9aa7bc;
+  --line:#2b3547; --navy:#8fc0ef; --accent:#4f93d6; --good:#7fd58b; --good-bg:#15321c;
+  --bad:#f08b7e; --bad-bg:#3a1714; --warn:#e3b64a; --warn-bg:#2e2510; --shadow:0 10px 30px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0f1420; --panel:#171e2c; --panel-2:#1e2736; --ink:#eaf0f8; --muted:#9aa7bc;
+  --line:#2b3547; --navy:#8fc0ef; --accent:#4f93d6; --good:#7fd58b; --good-bg:#15321c;
+  --bad:#f08b7e; --bad-bg:#3a1714; --warn:#e3b64a; --warn-bg:#2e2510; --shadow:0 10px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box} html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+.wrap{max-width:1040px;margin:0 auto;padding:22px 18px 70px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--navy);margin-bottom:4px}
+.brand .dot{width:12px;height:12px;border-radius:3px;background:var(--bad)}
+h1{font-size:1.9rem;color:var(--navy);margin:.1em 0 .2em;text-wrap:balance}
+h2{font-size:1.15rem;color:var(--navy);margin:0 0 .4em}
+p{margin:.4em 0}.muted{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+.kicker{font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--bad)}
+code,.mono{font-family:"SFMono-Regular",Consolas,Menlo,monospace}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}h1{font-size:1.6rem}}
+label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin:8px 0 3px}
+select,input[type=text]{font:inherit;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.field-row{display:flex;gap:10px}.field-row>div{flex:1}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:700;padding:11px 16px;border-radius:10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}.btn.primary:hover{background:var(--accent)}
+.btn.sm{padding:6px 10px;font-size:.82rem}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.spread{justify-content:space-between}
+.rule{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin-top:8px}
+.rule .num{color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums;width:1.4em;text-align:right}
+.rule .txt{flex:1;font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:.82rem;overflow-x:auto;white-space:nowrap}
+.rule .act{font-weight:800}.rule .act.allow{color:var(--good)}.rule .act.deny{color:var(--bad)}
+.rule button{border:1px solid var(--line);background:var(--panel);border-radius:7px;cursor:pointer;padding:2px 7px;font-weight:800;color:var(--muted)}
+.rule button:hover{border-color:var(--accent)}
+.flow{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--panel-2);margin-top:7px}
+.flow .path{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:.84rem}
+.flow .desc{font-size:.8rem;color:var(--muted)}
+.flow .intent{font-size:.72rem;font-weight:800}
+.flow .intent.a{color:var(--good)}.flow .intent.d{color:var(--bad)}
+.flow .verdict{font-size:.76rem;font-weight:800;margin-top:3px}
+.flow.ok{border-color:var(--good);background:var(--good-bg)}
+.flow.hole{border-color:var(--bad);background:var(--bad-bg)}
+.flow.broken{border-color:var(--warn);background:var(--warn-bg)}
+.scoreline{display:flex;gap:18px;flex-wrap:wrap;font-weight:800}
+.scoreline .n{font-size:1.6rem;font-variant-numeric:tabular-nums}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.callout{border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:0 10px 10px 0;padding:10px 14px;margin-top:10px;font-size:.92rem}
+.callout.win{border-left-color:var(--good);background:var(--good-bg)}
+.callout.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.themebtn{float:right;margin-top:-2px}
+.foot{margin-top:24px;color:var(--muted);font-size:.8rem;text-align:center}
+.zones{font-size:.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="btn sm themebtn" id="themeBtn">Theme</button>
+  <div class="brand"><span class="dot"></span> Firewall Lab</div>
+  <h1>Build the rulebase. Enforce the policy.</h1>
+  <p class="muted">A firewall is just an ordered list of rules. Traffic is checked top-down, <b>first match wins</b>, and anything that matches nothing is <b>denied by default</b>. Write ALLOW rules so the firewall enforces the policy below — without opening holes. (ISI 315 · Week 6)</p>
+
+  <div class="card">
+    <h2>The network &amp; the policy</h2>
+    <p class="zones"><b>Zones:</b> internet · dmz (web store) · internal (staff LAN) · db (card database) · pos (registers) · vendor (HVAC contractor VPN) · ops (building systems)</p>
+    <p class="muted" style="margin:.5em 0 0">Each request below is either <span class="good">allowed</span> or <span class="bad">denied</span> by policy. Everything starts blocked (default-deny) — you add the ALLOW rules. A firewall decides <i>yes/no on a connection</i>; it can't inspect a payload on an allowed port (that's what Signature Lab is for).</p>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT: policy / flows -->
+    <div class="card">
+      <div class="row spread"><h2 style="margin:0">Traffic vs. policy</h2><span class="muted" id="flowNote">10 requests</span></div>
+      <div id="flows"></div>
+    </div>
+
+    <!-- RIGHT: rules -->
+    <div class="card">
+      <h2>Your firewall rules <span class="muted" style="font-weight:600">(top-down, first match wins)</span></h2>
+      <div class="field-row">
+        <div><label for="action">Action</label><select id="action"><option value="allow">ALLOW</option><option value="deny">DENY</option></select></div>
+        <div><label for="port">Port</label><input type="text" id="port" maxlength="6" placeholder="any or 443"></div>
+      </div>
+      <div class="field-row">
+        <div><label for="src">From (src)</label><select id="src"></select></div>
+        <div><label for="dst">To (dst)</label><select id="dst"></select></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="addRule">+ Add rule</button>
+        <button class="btn sm" id="loadStarter">Add an example</button></div>
+      <div id="ruleList"></div>
+      <p class="muted" id="defaultRow" style="margin-top:8px;font-size:.82rem">⤷ default: <b>DENY</b> everything not matched above.</p>
+      <div class="row spread" style="margin-top:12px">
+        <button class="btn sm" id="clearRules">Clear</button>
+        <button class="btn primary" id="run">Test the firewall ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="results" hidden>
+    <h2>Results</h2>
+    <div class="scoreline">
+      <div><div class="n good" id="sOK">0</div><div class="muted">correct</div></div>
+      <div><div class="n bad" id="sHole">0</div><div class="muted">security holes</div></div>
+      <div><div class="n warn" id="sBroke">0</div><div class="muted">legit traffic blocked</div></div>
+    </div>
+    <div id="verdict"></div>
+    <div id="callouts"></div>
+    <p class="muted" style="margin-top:10px">Scroll up — each request is colored: <span class="good">green</span> = matches policy, <span class="bad">red</span> = a hole (allowed something policy forbids), <span class="warn">amber</span> = blocked something that should be allowed.</p>
+  </div>
+
+  <div class="foot">Firewall Lab · runs in your browser · ISI 315 Week 6 (firewalls &amp; access policy, §9.2–9.4).</div>
+</div>
+
+<script>
+"use strict";
+try{const t=localStorage.getItem("fl_theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
+document.getElementById("themeBtn").onclick=()=>{const c=document.documentElement.getAttribute("data-theme");const n=c==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("fl_theme",n);}catch(e){}};
+
+const ZONES=["internet","dmz","internal","db","pos","vendor","ops"];
+/* policy spec: allow=true means the firewall SHOULD permit this flow */
+const FLOWS=[
+ {src:"internet",dst:"dmz",port:443,allow:true,desc:"customer reaches the web store"},
+ {src:"internet",dst:"db",port:1433,allow:false,desc:"public tries to reach the card database"},
+ {src:"internet",dst:"internal",port:3389,allow:false,desc:"remote desktop from the internet"},
+ {src:"dmz",dst:"db",port:1433,allow:true,desc:"web app queries the database"},
+ {src:"pos",dst:"db",port:1433,allow:true,desc:"registers process a payment"},
+ {src:"internal",dst:"internet",port:443,allow:true,desc:"staff browse the web"},
+ {src:"vendor",dst:"ops",port:443,allow:true,desc:"HVAC vendor reaches building systems"},
+ {src:"vendor",dst:"pos",port:445,allow:false,desc:"vendor reaches the registers — the Target hole"},
+ {src:"vendor",dst:"db",port:1433,allow:false,desc:"vendor reaches the card database"},
+ {src:"internal",dst:"db",port:1433,allow:false,desc:"staff laptop hits the DB directly"}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let rules=[]; let lastEval=null;
+
+function decide(flow){
+  for(let i=0;i<rules.length;i++){
+    const r=rules[i];
+    const okSrc = r.src==="any"||r.src===flow.src;
+    const okDst = r.dst==="any"||r.dst===flow.dst;
+    const okPort= !r.port||r.port==="any"||String(r.port)===String(flow.port);
+    if(okSrc&&okDst&&okPort) return {allowed:r.action==="allow", rule:i+1};
+  }
+  return {allowed:false, rule:0}; // default deny
+}
+function ruleText(r){return `${r.action.toUpperCase()}  ${r.src} -> ${r.dst}  :${r.port||"any"}`;}
+
+function renderZonesSelects(){
+  const opt=z=>`<option value="${z}">${z}</option>`;
+  document.getElementById("src").innerHTML=['<option value="any">any</option>'].concat(ZONES.map(opt)).join("");
+  document.getElementById("dst").innerHTML=['<option value="any">any</option>'].concat(ZONES.map(opt)).join("");
+}
+function renderFlows(){
+  const el=document.getElementById("flows");
+  el.innerHTML=FLOWS.map((f,i)=>{
+    let cls="flow",verdict="";
+    if(lastEval){
+      const d=lastEval[i];
+      if(d.allowed===f.allow){cls+=" ok";verdict=`<div class="verdict good">✓ ${d.allowed?"allowed":"blocked"} — matches policy${d.rule?` (rule ${d.rule})`:" (default deny)"}</div>`;}
+      else if(d.allowed && !f.allow){cls+=" hole";verdict=`<div class="verdict bad">⚠ ALLOWED — but policy says deny (security hole, rule ${d.rule})</div>`;}
+      else {cls+=" broken";verdict=`<div class="verdict warn">✗ BLOCKED — but policy says allow (legit traffic broken)</div>`;}
+    }
+    return `<div class="${cls}"><div class="row spread"><span class="path">${f.src} → ${f.dst} : ${f.port}</span>
+      <span class="intent ${f.allow?'a':'d'}">${f.allow?"should ALLOW":"should DENY"}</span></div>
+      <div class="desc">${esc(f.desc)}</div>${verdict}</div>`;
+  }).join("");
+}
+function renderRules(){
+  const el=document.getElementById("ruleList");
+  el.innerHTML=rules.map((r,i)=>`<div class="rule"><span class="num">${i+1}</span>
+    <span class="txt"><span class="act ${r.action}">${r.action.toUpperCase()}</span> ${r.src} → ${r.dst} :${r.port||"any"}</span>
+    <button data-up="${i}" title="move up" ${i===0?"disabled":""}>↑</button>
+    <button data-down="${i}" title="move down" ${i===rules.length-1?"disabled":""}>↓</button>
+    <button data-del="${i}" title="remove" style="color:var(--bad)">✕</button></div>`).join("");
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{rules.splice(+b.dataset.del,1);renderRules();});
+  el.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.up;if(i>0){[rules[i-1],rules[i]]=[rules[i],rules[i-1]];renderRules();}});
+  el.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>{const i=+b.dataset.down;if(i<rules.length-1){[rules[i+1],rules[i]]=[rules[i],rules[i+1]];renderRules();}});
+}
+
+function addRule(){
+  rules.push({action:document.getElementById("action").value,
+    src:document.getElementById("src").value,
+    dst:document.getElementById("dst").value,
+    port:document.getElementById("port").value.trim()||"any"});
+  document.getElementById("port").value="";
+  renderRules();
+}
+document.getElementById("addRule").onclick=addRule;
+document.getElementById("loadStarter").onclick=()=>{
+  document.getElementById("action").value="allow";document.getElementById("src").value="internet";
+  document.getElementById("dst").value="dmz";document.getElementById("port").value="443";
+};
+document.getElementById("clearRules").onclick=()=>{rules=[];lastEval=null;renderRules();renderFlows();document.getElementById("results").hidden=true;};
+
+document.getElementById("run").onclick=()=>{
+  lastEval=FLOWS.map(decide);
+  let ok=0,hole=0,broke=0;
+  FLOWS.forEach((f,i)=>{const d=lastEval[i]; if(d.allowed===f.allow)ok++; else if(d.allowed&&!f.allow)hole++; else broke++;});
+  renderFlows();
+  document.getElementById("sOK").textContent=ok;
+  document.getElementById("sHole").textContent=hole;
+  document.getElementById("sBroke").textContent=broke;
+  let v;
+  if(hole===0&&broke===0) v=`<div class="callout win"><b>Policy enforced.</b> Every request matches the policy, with no holes and nothing legitimate blocked. Notice you only wrote ALLOW rules — <b>default-deny</b> handled everything else.</div>`;
+  else if(hole>0&&broke>0) v=`<div class="callout err"><b>${hole} hole(s)</b> and <b>${broke} broken flow(s)</b>. Both problems below.</div>`;
+  else if(hole>0) v=`<div class="callout err"><b>${hole} security hole(s).</b> Your rules permit traffic the policy forbids.</div>`;
+  else v=`<div class="callout"><b>${broke} legitimate flow(s) blocked.</b> Your rules are too strict, or an order problem is shadowing an ALLOW.</div>`;
+  document.getElementById("verdict").innerHTML=v;
+
+  let c="";
+  if(hole>0){
+    c+=`<div class="callout err"><b>Why the hole?</b> Usually an over-broad ALLOW (an <code>any</code> src/dst/port) lets more through than intended. Narrow it to the exact zones and port — or put a specific <b>DENY above it</b>, since the first matching rule wins.</div>`;
+  }
+  if(broke>0){
+    c+=`<div class="callout"><b>Why the broken flow?</b> A broad DENY placed <b>above</b> a specific ALLOW shadows it — the DENY matches first and the ALLOW never runs. Move the ALLOW higher, or make the DENY narrower. Rule order is part of the policy.</div>`;
+  }
+  if(hole===0&&broke===0){
+    c+=`<div class="callout"><b>The takeaway:</b> least privilege + default-deny. A firewall still can't see <i>inside</i> an allowed connection — a malicious query to the DB on port 1433 looks identical to a real one. That blind spot is why you also run intrusion detection.</div>`;
+  }
+  document.getElementById("callouts").innerHTML=c;
+  document.getElementById("results").hidden=false;
+  document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
+};
+
+renderZonesSelects();
+renderFlows();
+renderRules();
+</script>
+</body>
+</html>

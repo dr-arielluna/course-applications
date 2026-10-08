@@ -89,6 +89,16 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700;color:var(--accent
     <p class="muted" style="margin-top:8px">A rule = an <b>action</b> on a <b>protocol</b> and <b>port</b>, firing when the <b>content</b> text appears in the traffic. Below you build the <code>port</code>, <code>content</code>, and <code>nocase</code> parts.</p>
   </div>
 
+  <div class="card" id="challenge">
+    <div class="row spread">
+      <div><span class="kicker" style="color:var(--warn)">🎯 Challenge</span>
+        <h2 style="margin:.1em 0 0">Catch all 5 payload attacks — zero false alarms</h2>
+        <p class="muted" style="margin:.2em 0 0">The 6th attack is a port scan with no payload — signatures can't touch it. That one is anomaly detection's job.</p></div>
+      <div class="muted" style="text-align:right;white-space:nowrap">Attempts: <b id="chAtt">0</b><br>Best: <b id="chBest">—</b></div>
+    </div>
+    <div id="chStatus"></div>
+  </div>
+
   <div class="cols">
     <!-- LEFT: traffic feed -->
     <div class="card">
@@ -163,6 +173,11 @@ const EVENTS=[
  {proto:"udp",port:53,payload:"DNS query A evil-c2.example.net",mal:true,kind:"Malware callout (C2)"}
 ];
 const TOTAL_ATTACKS=EVENTS.filter(e=>e.mal).length;
+const CATCHABLE=EVENTS.filter(e=>e.mal&&!e.noContent).length; // payload-based attacks a signature can catch
+let attempts=0;
+let best=(()=>{try{return JSON.parse(localStorage.getItem("sl_best")||"null");}catch(e){return null;}})();
+function updateChallengeUI(){const a=document.getElementById("chAtt"),b=document.getElementById("chBest");
+  if(a)a.textContent=attempts; if(b)b.textContent=best?(best.rules+" rules "+"★".repeat(best.stars)):"—";}
 
 /* ---------- rules ---------- */
 let rules=[];
@@ -267,12 +282,27 @@ document.getElementById("run").onclick=()=>{
     c+=`<div class="callout"><b>Blind spot — no payload.</b> The port scan has no text to match at all. <b>No content signature can ever catch it.</b> That's exactly why you also need <b>anomaly / threshold detection</b> (too many connections, too fast) — the §8.3 lesson.</div>`;
   }
   document.getElementById("callouts").innerHTML=c;
+
+  // challenge mode
+  attempts++;
+  const catchableCaught=EVENTS.filter((e,i)=>e.mal&&!e.noContent&&fired[i]).length;
+  const chEl=document.getElementById("chStatus");
+  if(catchableCaught===CATCHABLE && fp===0){
+    const stars=rules.length<=5?3:(rules.length<=8?2:1);
+    if(!best||rules.length<best.rules){best={rules:rules.length,stars};try{localStorage.setItem("sl_best",JSON.stringify(best));}catch(e){}}
+    chEl.innerHTML=`<div class="callout win"><b>🎯 Challenge complete!</b> All ${CATCHABLE} payload attacks caught, zero false alarms — with ${rules.length} rule(s). ${"★".repeat(stars)}${"☆".repeat(3-stars)} <span class="muted">— fewer rules, more stars. (The port scan stays uncaught: that's anomaly detection's job, not a signature's.)</span></div>`;
+  } else {
+    chEl.innerHTML=`<div class="callout"><b>Not there yet.</b> ${catchableCaught}/${CATCHABLE} payload attacks caught, ${fp} false alarm(s). Goal: all ${CATCHABLE} with zero false alarms.</div>`;
+  }
+  updateChallengeUI();
+
   document.getElementById("results").hidden=false;
   document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
 };
 
 renderFeed();
 renderRules();
+updateChallengeUI();
 </script>
 </body>
 </html>
