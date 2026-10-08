@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stop the Breach — Play</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="dot"></span> Stop the Breach</div>
+  <div id="app" class="stack"></div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+"use strict";
+const socket = io();
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let joined=false, ME={score:0,answer:null,name:""}, ST=null, myScreenRound=-1;
+
+function screenJoin(err){
+  const pin = new URLSearchParams(location.search).get("pin") || "";
+  app.innerHTML = `
+    <div class="card stack">
+      <div><span class="kicker">Join the game</span><h1>Enter the PIN</h1></div>
+      ${err?`<div class="feedback bad">${esc(err)}</div>`:""}
+      <input type="text" id="pin" inputmode="numeric" maxlength="4" placeholder="4-digit PIN" value="${esc(pin)}">
+      <input type="text" id="name" maxlength="24" placeholder="Your name or team">
+      <button class="btn primary lg" id="go">Join</button>
+    </div>`;
+  const go=()=>{
+    const p=(document.getElementById("pin").value||"").trim();
+    const n=(document.getElementById("name").value||"").trim();
+    if(!p){ return; }
+    socket.emit("player:join",{pin:p, name:n});
+  };
+  document.getElementById("go").onclick=go;
+  document.getElementById("name").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+}
+
+socket.on("join:ok", d => { joined=true; ME.name=d.name; render(); });
+socket.on("join:error", msg => { joined=false; screenJoin(msg); });
+socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; if(joined) render(); });
+socket.on("state", s => { ST=s; if(joined) render(); });
+socket.on("host:gone", () => { joined=false; app.innerHTML="<div class='card stack'><h2>Game ended</h2><p class='muted'>The host closed the game. Refresh to join a new one.</p></div>"; });
+
+function defenseButtons(disabled, highlightWorks){
+  return `<div class="grid-def">` + ST.defenses.map(d=>{
+    let cls="def";
+    if(ME.answer===d.id) cls+=" sel";
+    if(highlightWorks){ if(highlightWorks.includes(d.id)) cls+=" correct"; else if(ME.answer===d.id) cls+=" wrong"; }
+    return `<button class="${cls}" data-def="${d.id}" ${disabled?"disabled":""}><span class="tag">${d.id}</span><span><span class="name">${esc(d.name)}</span><br><span class="desc">${esc(d.desc)}</span></span></button>`;
+  }).join("") + `</div>`;
+}
+function wireDefense(){
+  app.querySelectorAll("button.def").forEach(b=> b.onclick=()=>{ if(b.disabled) return; socket.emit("player:answer",{letter:b.getAttribute("data-def")}); });
+}
+function scoreHeader(){ return `<div class="row spread"><span class="chip">${esc(ME.name)}</span><span class="chip">Score: <b>${ME.score}</b></span></div>`; }
+
+function render(){
+  if(!joined){ screenJoin(); return; }
+  if(!ST){ app.innerHTML="<div class='card'>Connecting…</div>"; return; }
+  const p=ST.phase;
+  if(p==="lobby"){
+    app.innerHTML = `${scoreHeader()}<div class="card center stack"><span class="kicker good">You're in!</span><h2>Waiting for the host to start…</h2><p class="muted">${ST.playerCount} player${ST.playerCount===1?"":"s"} in the room.</p></div>`;
+    return;
+  }
+  if(p==="round"){
+    const locked = ME.answer!=null;
+    app.innerHTML = `${scoreHeader()}
+      <div class="card stack">
+        <span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
+        <h2>${esc(ST.move)}</h2>
+        ${locked? `<div class="feedback"><b>Locked in: ${esc(ME.answer)}</b><br>Waiting for the host to reveal…</div>` : `<p class="muted">Tap the defense that stops this.</p>`}
+        ${defenseButtons(locked, null)}
+      </div>`;
+    if(!locked) wireDefense();
+    return;
+  }
+  if(p==="reveal"){
+    const ok = ST.works.includes(ME.answer);
+    app.innerHTML = `${scoreHeader()}
+      <div class="card stack">
+        <span class="kicker">Round ${ST.round+1} result</span>
+        <div class="feedback ${ok?'good':'bad'}"><b>${ME.answer? (ok?`✓ ${ME.answer} works! +${ST.points}`:`✗ ${ME.answer} wouldn't stop this`) : "No answer this round"}</b><br>${esc(ST.why)}</div>
+        ${defenseButtons(true, ST.works)}
+      </div>`;
+    return;
+  }
+  if(p==="bonus"){
+    const locked = ME.answer!=null;
+    app.innerHTML = `${scoreHeader()}
+      <div class="card stack"><span class="kicker gold">Bonus · +${ST.points}</span>
+        <h2>${esc(ST.prompt)}</h2>
+        ${locked?`<div class="feedback"><b>Locked in: ${esc(ME.answer)}</b><br>Waiting for the host…</div>`:`<p class="muted">Pick the one you'd add first.</p>`}
+        ${defenseButtons(locked, null)}</div>`;
+    if(!locked) wireDefense();
+    return;
+  }
+  if(p==="bonusReveal"){
+    app.innerHTML = `${scoreHeader()}<div class="card stack"><span class="kicker gold">Bonus scored</span>
+      <div class="feedback good">${ME.answer?`+${ST.points} for making a choice.`:"No answer — no bonus."} Any defense is defensible; the point is arguing your pick.</div></div>`;
+    return;
+  }
+  if(p==="results"){
+    const me = ST.scoreboard.findIndex(t=>t.name===ME.name);
+    app.innerHTML = `${scoreHeader()}
+      <div class="card center stack"><span class="kicker gold">Final</span><div class="big">${ME.score}</div>
+        <p class="muted">${me>=0?`You placed #${me+1} of ${ST.scoreboard.length}`:""}</p></div>
+      <div class="card stack"><span class="kicker">What really happened</span><p>${esc(ST.reveal)}</p>
+        <ul class="stack" style="margin:0;padding-left:20px">${ST.lessons.map(([h,b])=>`<li><b>${esc(h)}</b> ${esc(b)}</li>`).join("")}</ul></div>`;
+    return;
+  }
+  app.innerHTML="<div class='card'>…</div>";
+}
+
+screenJoin();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Render Blueprint for the course-applications monorepo.
+# Render reads this file at the REPO ROOT. `rootDir` points it at the app's
+# subfolder, and the build/start commands run from there.
+# Add more services below as you add more apps to this repo.
+services:
+  - type: web
+    name: stop-the-breach
+    runtime: node
+    plan: free
+    rootDir: stop-the-breach
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

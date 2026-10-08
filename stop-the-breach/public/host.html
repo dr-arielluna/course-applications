@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stop the Breach — Host</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="dot"></span> Stop the Breach — Host</div>
+  <div id="app" class="stack"></div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+"use strict";
+const socket = io();
+const app = document.getElementById("app");
+let PIN = null, ST = null;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const joinURL = () => location.origin + "/play.html";
+
+socket.on("connect", () => { if(!PIN) socket.emit("host:create"); });
+socket.on("host:created", d => { PIN = d.pin; });
+socket.on("state", s => { ST = s; render(); });
+socket.on("host:gone", () => { app.innerHTML = "<div class='card'>Host session ended.</div>"; });
+
+function defenseGrid(){
+  return `<div class="grid-def">` + ST.defenses.map(d=>`
+    <div class="def"><span class="tag">${d.id}</span><span><span class="name">${esc(d.name)}</span><br><span class="desc">${esc(d.desc)}</span></span></div>`).join("") + `</div>`;
+}
+function board(){
+  if(!ST.scoreboard.length) return "";
+  return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${i===0&&t.score>0?'win':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
+}
+function countsBlock(){
+  if(!ST.counts) return "";
+  const max = Math.max(1,...Object.values(ST.counts));
+  return Object.keys(ST.counts).map(k=>{
+    const n=ST.counts[k], correct = ST.works && ST.works.includes(k);
+    return `<div class="count"><span class="lbl"><b>${k}</b> ${n}</span><span class="bar" style="flex:1"><i style="width:${Math.round(n/max*100)}%;background:${correct?'var(--good)':'var(--accent)'}"></i></span></div>`;
+  }).join("");
+}
+
+function render(){
+  if(!ST){ app.innerHTML="<div class='card'>Connecting…</div>"; return; }
+  const p = ST.phase;
+  if(p==="lobby"){
+    app.innerHTML = `
+      <div class="card center stack">
+        <span class="kicker navy">Join at</span>
+        <h2 style="margin:0">${esc(joinURL())}</h2>
+        <span class="kicker">Game PIN</span>
+        <div class="pin">${PIN||"…"}</div>
+        <p class="muted">${ST.playerCount} player${ST.playerCount===1?"":"s"} joined</p>
+        <div class="players">${ST.players.map(n=>`<span class="chip">${esc(n)}</span>`).join("")}</div>
+        <div class="row" style="justify-content:center"><button class="btn primary lg" id="start" ${ST.playerCount<1?"disabled":""}>Start the game</button></div>
+        ${ST.playerCount<1?'<p class="note">Waiting for at least one player…</p>':''}
+      </div>`;
+    const b=document.getElementById("start"); if(b) b.onclick=()=>socket.emit("host:start");
+    return;
+  }
+  if(p==="round" || p==="reveal"){
+    const revealed = p==="reveal";
+    app.innerHTML = `
+      <div class="card stack">
+        <div class="row spread"><span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":" · "+ST.points+" pts"}</span>
+          <span class="muted">${ST.answered} of ${ST.playerCount} answered</span></div>
+        <h2>${esc(ST.move)}</h2>
+        ${revealed ? `<div class="feedback good"><b>Works: ${ST.works.join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}`
+                   : `<p class="muted">Students are choosing a defense on their devices…</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
+        <div class="hr"></div>
+        <div class="row spread">
+          ${revealed ? `<span></span><button class="btn primary lg" id="next">${ST.round+1<ST.total?"Next round":"Bonus round"}</button>`
+                     : `<span class="note">Give teams a moment, then reveal.</span><button class="btn primary lg" id="reveal">Reveal answer</button>`}
+        </div>
+      </div>
+      <div class="card stack"><span class="kicker navy">Scoreboard</span>${board()}</div>`;
+    const rv=document.getElementById("reveal"); if(rv) rv.onclick=()=>socket.emit("host:reveal");
+    const nx=document.getElementById("next"); if(nx) nx.onclick=()=>socket.emit("host:next");
+    return;
+  }
+  if(p==="bonus" || p==="bonusReveal"){
+    const revealed = p==="bonusReveal";
+    app.innerHTML = `
+      <div class="card stack">
+        <span class="kicker gold">Bonus · +${ST.points}</span>
+        <h2>${esc(ST.prompt)}</h2>
+        ${revealed ? `<div class="feedback good"><b>Everyone who answered earns +${ST.points}.</b> Any defense is defensible — the point is making and arguing a choice.</div>`
+                   : `<p class="muted">${ST.answered} of ${ST.playerCount} answered</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
+        <div class="hr"></div>
+        <div class="row spread"><span></span>
+          ${revealed ? `<button class="btn primary lg" id="next">See the winner</button>` : `<button class="btn primary lg" id="reveal">Score the bonus</button>`}</div>
+      </div>
+      <div class="card stack"><span class="kicker navy">Scoreboard</span>${board()}</div>`;
+    const rv=document.getElementById("reveal"); if(rv) rv.onclick=()=>socket.emit("host:reveal");
+    const nx=document.getElementById("next"); if(nx) nx.onclick=()=>socket.emit("host:next");
+    return;
+  }
+  if(p==="results"){
+    const win = ST.scoreboard[0];
+    app.innerHTML = `
+      <div class="card center stack"><span class="kicker gold">Winner</span>
+        <h1>🏆 ${win?esc(win.name):"—"}</h1><div><span class="pill gold">Breach Busters</span></div></div>
+      <div class="card stack"><span class="kicker navy">Final scoreboard</span>${board()}</div>
+      <div class="card stack"><span class="kicker">The reveal</span><p>${esc(ST.reveal)}</p>
+        <div><b>Why Target lost:</b></div>
+        <ul class="stack" style="margin:0;padding-left:20px">${ST.lessons.map(([h,b])=>`<li><b>${esc(h)}</b> ${esc(b)}</li>`).join("")}</ul></div>
+      <div class="row"><button class="btn primary" id="again">Play again (same teams)</button></div>`;
+    const a=document.getElementById("again"); if(a) a.onclick=()=>socket.emit("host:restart");
+    return;
+  }
+  app.innerHTML="<div class='card'>…</div>";
+}
+</script>
+</body>
+</html>
