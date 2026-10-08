@@ -99,9 +99,12 @@ function render(){
   }
   if(p==="results"){
     const win = ST.scoreboard[0];
+    const medals = ["🥇","🥈","🥉"];
+    const podium = ST.scoreboard.slice(0,3).map((t,i)=>`<div class="medal"><span class="m">${medals[i]}</span><span class="mn">${esc(t.name)}</span><span class="ms">${t.score}</span></div>`).join("");
     app.innerHTML = `
-      <div class="card center stack"><span class="kicker gold">Winner</span>
-        <h1>🏆 ${win?esc(win.name):"—"}</h1><div><span class="pill gold">Breach Busters</span></div></div>
+      <div class="card center stack"><span class="kicker gold">Champions</span>
+        <h1>🏆 ${win?esc(win.name):"—"}</h1><div><span class="pill gold">Breach Busters</span></div>
+        <div class="podium">${podium}</div></div>
       <div class="card stack"><span class="kicker navy">Final scoreboard</span>${board()}</div>
       <div class="card stack"><span class="kicker">The reveal</span><p>${esc(ST.reveal)}</p>
         <div><b>Why Target lost:</b></div>

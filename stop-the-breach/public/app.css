@@ -57,6 +57,12 @@ button.def.wrong{border-color:var(--bad); background:var(--bad-bg)} button.def.w
 .feedback{padding:14px 16px;border-radius:12px;border:1px solid var(--line);margin-top:10px}
 .feedback.good{background:var(--good-bg);border-color:var(--good)} .feedback.bad{background:var(--bad-bg);border-color:var(--bad)}
 .note{font-size:.85rem;color:var(--muted)}
+.podium{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin:8px auto 0}
+.medal{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2)}
+.medal:first-child{border-color:var(--gold);background:var(--gold-bg)}
+.medal .m{font-size:1.5rem;line-height:1}
+.medal .mn{font-weight:700;flex:1;text-align:left}
+.medal .ms{font-variant-numeric:tabular-nums;font-weight:700;color:var(--muted)}
 .count{display:flex;align-items:center;gap:10px;margin:4px 0}
 .count .lbl{width:150px}
 .hr{height:1px;background:var(--line);margin:14px 0}
