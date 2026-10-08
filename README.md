@@ -6,6 +6,10 @@ repo root carries the shared Render blueprint.
 | App | Folder | What it is |
 |---|---|---|
 | Stop the Breach | [`stop-the-breach/`](stop-the-breach/) | ISI 315 Week 6 — live, multi-device security game (Node + Socket.IO). |
+| Signature Lab | [`signature-lab/`](signature-lab/) | ISI 315 Week 6 — write Snort-style IDS rules against simulated traffic; see catches, misses, and false alarms (§8.3 & §8.9). |
+
+The blueprint defines **both** services, so one Render deploy creates `stop-the-breach`
+**and** `signature-lab`, each from its own subfolder.
 
 ---
 

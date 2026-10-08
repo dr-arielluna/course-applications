@@ -1,0 +1,9 @@
+{
+  "name": "signature-lab",
+  "version": "1.0.0",
+  "description": "ISI 315 Week 6 — write Snort-style IDS rules against simulated traffic.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2" }
+}

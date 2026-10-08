@@ -14,3 +14,15 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  - type: web
+    name: signature-lab
+    runtime: node
+    plan: free
+    rootDir: signature-lab
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
