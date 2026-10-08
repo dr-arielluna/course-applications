@@ -16,12 +16,12 @@
 "use strict";
 const socket = io();
 const app = document.getElementById("app");
-let PIN = null, ST = null;
+let PIN = null, ST = null, QRDATA = null;
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const joinURL = () => location.origin + "/play.html";
 
-socket.on("connect", () => { if(!PIN) socket.emit("host:create"); });
-socket.on("host:created", d => { PIN = d.pin; });
+socket.on("connect", () => { if(!PIN) socket.emit("host:create", { origin: location.origin }); });
+socket.on("host:created", d => { PIN = d.pin; QRDATA = d.qr || null; render(); });
 socket.on("state", s => { ST = s; render(); });
 socket.on("host:gone", () => { app.innerHTML = "<div class='card'>Host session ended.</div>"; });
 
@@ -48,8 +48,9 @@ function render(){
   if(p==="lobby"){
     app.innerHTML = `
       <div class="card center stack">
-        <span class="kicker navy">Join at</span>
-        <h2 style="margin:0">${esc(joinURL())}</h2>
+        <span class="kicker navy">Scan to join</span>
+        ${QRDATA?`<img src="${QRDATA}" alt="QR code to join the game" width="240" height="240" style="width:240px;height:240px;border-radius:14px;background:#fff;padding:10px">`:""}
+        <p class="muted" style="margin:.1em 0 0">or go to <b>${esc(joinURL())}</b> and enter the PIN:</p>
         <span class="kicker">Game PIN</span>
         <div class="pin">${PIN||"…"}</div>
         <p class="muted">${ST.playerCount} player${ST.playerCount===1?"":"s"} joined</p>

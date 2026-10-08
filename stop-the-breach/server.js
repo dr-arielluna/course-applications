@@ -10,6 +10,7 @@ const path = require("path");
 const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
+const QRCode = require("qrcode");
 
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
@@ -134,12 +135,16 @@ io.on("connection", (socket) => {
   socket.data.role = null;
   socket.data.pin = null;
 
-  socket.on("host:create", () => {
+  socket.on("host:create", async (payload) => {
     const pin = makePin();
     rooms[pin] = { hostId: socket.id, phase: "lobby", round: 0, players: {} };
     socket.data.role = "host"; socket.data.pin = pin;
     socket.join(pin);
-    socket.emit("host:created", { pin });
+    const origin = (payload && typeof payload.origin === "string") ? payload.origin.replace(/\/+$/, "") : "";
+    const joinUrl = origin + "/play.html?pin=" + pin;
+    let qr = null;
+    try { qr = await QRCode.toDataURL(joinUrl, { margin: 1, width: 320 }); } catch (e) { /* QR optional */ }
+    socket.emit("host:created", { pin, qr, joinUrl });
     broadcast(pin);
   });
 
