@@ -83,6 +83,21 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700;color:var(--accent
   <h1>Write a rule. Catch the attack.</h1>
   <p class="muted">A tiny Snort-style intrusion-detection sandbox. Inspect the traffic, write <code>content</code> rules, and run detection. See what you catch, miss, and false-alarm on. (ISI 315 · Week 6)</p>
 
+  <div class="card" style="border-color:var(--accent)">
+    <h2>▶ Quick start — run a demo in 3 clicks</h2>
+    <ol style="margin:.2em 0 .7em 1.1em;padding:0">
+      <li>Click a preset below — it loads example rules and runs them instantly.</li>
+      <li>The traffic further down lights up: <span class="good">green</span> = attack caught, <span class="warn">amber</span> = attack missed, <span class="bad">red</span> = false alarm on normal traffic.</li>
+      <li>Read the callouts in <b>Results</b> and discuss. (To write your own rule, use the form on the right.)</li>
+    </ol>
+    <div class="row">
+      <button class="btn primary" data-preset="one">1 · One rule</button>
+      <button class="btn primary" data-preset="broad">2 · Too broad</button>
+      <button class="btn primary" data-preset="tuned">3 · Tuned set</button>
+    </div>
+    <p class="muted" style="margin:.6em 0 0;font-size:.82rem">Suggested demo order: One rule (catches little) → Too broad (false alarms) → Tuned set (catches the payload attacks; the port scan still slips past — that's anomaly detection's job).</p>
+  </div>
+
   <div class="card">
     <h2>How a Snort rule reads</h2>
     <div class="rulebar">alert tcp any any -&gt; $HOME_NET <b>80</b> (msg:"SQL injection"; content:<b>"' OR '1'='1"</b>; nocase; sid:1000001;)</div>

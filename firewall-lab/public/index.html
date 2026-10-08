@@ -81,6 +81,21 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid 
   <h1>Build the rulebase. Enforce the policy.</h1>
   <p class="muted">A firewall is just an ordered list of rules. Traffic is checked top-down, <b>first match wins</b>, and anything that matches nothing is <b>denied by default</b>. Write ALLOW rules so the firewall enforces the policy below — without opening holes. (ISI 315 · Week 6)</p>
 
+  <div class="card" style="border-color:var(--accent)">
+    <h2>▶ Quick start — run a demo in 3 clicks</h2>
+    <ol style="margin:.2em 0 .7em 1.1em;padding:0">
+      <li>Click a preset below — it loads a rulebase and tests it instantly.</li>
+      <li>Each request lights up: <span class="good">green</span> = matches policy, <span class="bad">red</span> = a security hole (allowed something forbidden), <span class="warn">amber</span> = blocked something that should be allowed.</li>
+      <li>Read the callouts in <b>Results</b> and discuss. (To build your own, use the rule form on the right.)</li>
+    </ol>
+    <div class="row">
+      <button class="btn primary" data-preset="leaky">1 · Leaky rules</button>
+      <button class="btn primary" data-preset="tuned">2 · Tuned policy</button>
+      <button class="btn primary" data-preset="shadow">3 · Shadowed order</button>
+    </div>
+    <p class="muted" style="margin:.6em 0 0;font-size:.82rem">Suggested demo order: Leaky (a broad ALLOW opens holes) → Tuned (clean, default-deny does the rest) → Shadowed order (a broad DENY on top blocks legit traffic — order matters).</p>
+  </div>
+
   <div class="card">
     <h2>The network &amp; the policy</h2>
     <p class="zones"><b>Zones:</b> internet · dmz (web store) · internal (staff LAN) · db (card database) · pos (registers) · vendor (HVAC contractor VPN) · ops (building systems)</p>
