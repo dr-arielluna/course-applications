@@ -49,7 +49,7 @@ function render(){
     app.innerHTML = `
       <div class="card center stack">
         <span class="kicker navy">Scan to join</span>
-        ${QRDATA?`<img src="${QRDATA}" alt="QR code to join the game" width="240" height="240" style="width:240px;height:240px;border-radius:14px;background:#fff;padding:10px">`:""}
+        ${QRDATA?`<img src="${QRDATA}" alt="QR code to join the game" width="240" height="240" style="align-self:center;width:240px;height:240px;border-radius:14px;background:#fff;padding:10px">`:""}
         <p class="muted" style="margin:.1em 0 0">or go to <b>${esc(joinURL())}</b> and enter the PIN:</p>
         <span class="kicker">Game PIN</span>
         <div class="pin">${PIN||"…"}</div>
