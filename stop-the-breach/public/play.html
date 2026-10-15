@@ -54,7 +54,7 @@ function defenseButtons(disabled, highlightWorks){
   }).join("") + `</div>`;
 }
 function wireDefense(){
-  app.querySelectorAll("button.def").forEach(b=> b.onclick=()=>{ if(b.disabled) return; socket.emit("player:answer",{letter:b.getAttribute("data-def")}); });
+  app.querySelectorAll("button.def").forEach(b=> b.onclick=()=>{ if(b.disabled) return; const l=b.getAttribute("data-def"); if(l===ME.answer) return; socket.emit("player:answer",{letter:l}); });
 }
 function scoreHeader(){ return `<div class="row spread"><span class="chip">${esc(ME.name)}</span><span class="chip">Score: <b>${ME.score}</b></span></div>`; }
 
@@ -72,10 +72,10 @@ function render(){
       <div class="card stack">
         <span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
         <h2>${esc(ST.move)}</h2>
-        ${locked? `<div class="feedback"><b>Locked in: ${esc(ME.answer)}</b><br>Waiting for the host to reveal…</div>` : `<p class="muted">Tap the defense that stops this.</p>`}
-        ${defenseButtons(locked, null)}
+        ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Changed your mind? Tap a different one until the host reveals.</div>` : `<p class="muted">Tap the defense that stops this.</p>`}
+        ${defenseButtons(false, null)}
       </div>`;
-    if(!locked) wireDefense();
+    wireDefense();
     return;
   }
   if(p==="reveal"){
@@ -93,9 +93,9 @@ function render(){
     app.innerHTML = `${scoreHeader()}
       <div class="card stack"><span class="kicker gold">Bonus · +${ST.points}</span>
         <h2>${esc(ST.prompt)}</h2>
-        ${locked?`<div class="feedback"><b>Locked in: ${esc(ME.answer)}</b><br>Waiting for the host…</div>`:`<p class="muted">Pick the one you'd add first.</p>`}
-        ${defenseButtons(locked, null)}</div>`;
-    if(!locked) wireDefense();
+        ${locked?`<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Tap a different one to change it until the host scores the bonus.</div>`:`<p class="muted">Pick the one you'd add first.</p>`}
+        ${defenseButtons(false, null)}</div>`;
+    wireDefense();
     return;
   }
   if(p==="bonusReveal"){

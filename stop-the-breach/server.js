@@ -173,7 +173,7 @@ io.on("connection", (socket) => {
     const p = room.players[socket.id];
     if (!p) return;
     if (room.phase !== "round" && room.phase !== "bonus") return;
-    if (p.answer != null) return; // locked
+    // answers can be changed freely until the host reveals (reveal flips the phase)
     if (!GAME.defenses.some((d) => d.id === letter)) return;
     p.answer = letter;
     broadcast(socket.data.pin);

@@ -38,3 +38,15 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  - type: web
+    name: who-regulates-you
+    runtime: node
+    plan: free
+    rootDir: who-regulates-you
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
