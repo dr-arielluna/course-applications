@@ -11,6 +11,7 @@ const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
 const QRCode = require("qrcode");
+const crypto = require("crypto");
 
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
@@ -68,7 +69,10 @@ const GAME = {
 const PUBLIC_DEFENSES = GAME.defenses.map((d) => ({ id: d.id, name: d.name, desc: d.desc }));
 
 /* ------------------------------- ROOMS ---------------------------------- */
-/* rooms[pin] = { hostId, phase, round, players:{id:{name,score,answer,counted}} } */
+/* rooms[pin] = { hostId, hostKey, phase, round, players:{token:{name,score,answer,counted,socketId,connected}} }
+ * Players are keyed by a token their browser keeps, not by socket id, so a phone that locks
+ * and reconnects gets its seat (and score) back. A host that drops has 10 minutes to resume. */
+const HOST_GRACE_MS = 10 * 60 * 1000;
 const rooms = {};
 
 function makePin() {
@@ -122,8 +126,8 @@ function broadcast(pin) {
   if (!room) return;
   io.to(pin).emit("state", publicState(room));
   // personal line to each player
-  Object.entries(room.players).forEach(([id, p]) => {
-    io.to(id).emit("you", { name: p.name, score: p.score, answer: p.answer });
+  Object.values(room.players).forEach((p) => {
+    if (p.connected) io.to(p.socketId).emit("you", { name: p.name, score: p.score, answer: p.answer });
   });
 }
 function resetAnswers(room) {
@@ -136,27 +140,39 @@ io.on("connection", (socket) => {
   socket.data.pin = null;
 
   socket.on("host:create", async (payload) => {
-    const pin = makePin();
-    rooms[pin] = { hostId: socket.id, phase: "lobby", round: 0, players: {} };
+    // a host whose screen slept or reloaded resumes its own room with the key it was given
+    const resume = payload && payload.resume;
+    let pin, room = resume && rooms[String(resume.pin)];
+    if (room && resume.hostKey === room.hostKey) {
+      pin = String(resume.pin);
+      clearTimeout(room.closeTimer); room.closeTimer = null;
+      room.hostId = socket.id;
+    } else {
+      pin = makePin();
+      room = rooms[pin] = { hostId: socket.id, hostKey: crypto.randomBytes(12).toString("hex"), phase: "lobby", round: 0, players: {} };
+    }
     socket.data.role = "host"; socket.data.pin = pin;
     socket.join(pin);
     const origin = (payload && typeof payload.origin === "string") ? payload.origin.replace(/\/+$/, "") : "";
     const joinUrl = origin + "/play.html?pin=" + pin;
     let qr = null;
     try { qr = await QRCode.toDataURL(joinUrl, { margin: 1, width: 320 }); } catch (e) { /* QR optional */ }
-    socket.emit("host:created", { pin, qr, joinUrl });
+    socket.emit("host:created", { pin, qr, joinUrl, hostKey: room.hostKey });
     broadcast(pin);
   });
 
-  socket.on("player:join", ({ pin, name }) => {
+  socket.on("player:join", ({ pin, name, token }) => {
     pin = String(pin || "").trim();
     name = String(name || "").trim().slice(0, 24) || "Player";
+    token = /^[A-Za-z0-9_-]{8,64}$/.test(String(token || "")) ? String(token) : socket.id;
     const room = rooms[pin];
     if (!room) { socket.emit("join:error", "No game with that PIN. Check the code on the screen."); return; }
-    socket.data.role = "player"; socket.data.pin = pin;
+    socket.data.role = "player"; socket.data.pin = pin; socket.data.token = token;
     socket.join(pin);
-    room.players[socket.id] = { name, score: 0, answer: null, counted: false };
-    socket.emit("join:ok", { pin, name });
+    const p = room.players[token];
+    if (p) { p.socketId = socket.id; p.connected = true; }   // returning device: keep name and score
+    else room.players[token] = { name, score: 0, answer: null, counted: false, socketId: socket.id, connected: true };
+    socket.emit("join:ok", { pin, name: room.players[token].name });
     broadcast(pin);
   });
 
@@ -170,7 +186,7 @@ io.on("connection", (socket) => {
   socket.on("player:answer", ({ letter }) => {
     const room = rooms[socket.data.pin];
     if (!room) return;
-    const p = room.players[socket.id];
+    const p = room.players[socket.data.token];
     if (!p) return;
     if (room.phase !== "round" && room.phase !== "bonus") return;
     // answers can be changed freely until the host reveals (reveal flips the phase)
@@ -226,13 +242,20 @@ io.on("connection", (socket) => {
     const pin = socket.data.pin; const room = rooms[pin];
     if (!room) return;
     if (socket.data.role === "host" && socket.id === room.hostId) {
-      io.to(pin).emit("host:gone");
-      delete rooms[pin];
+      // keep the game alive while the host's screen sleeps; close it only if they never come back
+      clearTimeout(room.closeTimer);
+      room.closeTimer = setTimeout(() => {
+        if (rooms[pin] === room) { io.to(pin).emit("host:gone"); delete rooms[pin]; }
+      }, HOST_GRACE_MS);
       return;
     }
     if (socket.data.role === "player") {
-      delete room.players[socket.id];
-      broadcast(pin);
+      const p = room.players[socket.data.token];
+      if (p && p.socketId === socket.id) {
+        if (room.phase === "lobby") delete room.players[socket.data.token]; // nothing to lose yet
+        else p.connected = false;                                           // keep seat and score
+        broadcast(pin);
+      }
     }
   });
 });

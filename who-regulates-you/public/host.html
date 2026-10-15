@@ -17,11 +17,14 @@
 const socket = io();
 const app = document.getElementById("app");
 let PIN = null, ST = null, QRDATA = null;
+// if this screen sleeps or reloads, reconnect to the same game (the server holds it for 10 minutes)
+const HKEY = "who-regulates-you:host";
+const savedHost = () => { try { return JSON.parse(sessionStorage.getItem(HKEY) || "null"); } catch (e) { return null; } };
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const joinURL = () => location.origin + "/play.html";
 
-socket.on("connect", () => { if(!PIN) socket.emit("host:create", { origin: location.origin }); });
-socket.on("host:created", d => { PIN = d.pin; QRDATA = d.qr || null; render(); });
+socket.on("connect", () => { socket.emit("host:create", { origin: location.origin, resume: savedHost() }); });
+socket.on("host:created", d => { PIN = d.pin; QRDATA = d.qr || null; try { sessionStorage.setItem(HKEY, JSON.stringify({ pin: d.pin, hostKey: d.hostKey })); } catch (e) {} render(); });
 socket.on("state", s => { ST = s; render(); });
 socket.on("host:gone", () => { app.innerHTML = "<div class='card'>Host session ended.</div>"; });
 
