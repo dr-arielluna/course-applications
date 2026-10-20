@@ -19,6 +19,9 @@ A HIPAA · B GLBA · C PCI DSS · D HIPAA + PCI DSS · E GLBA + PCI DSS · F Non
    reason, and a discussion question. **Next** moves on.
 4. Bonus round (+10 for any answer), then the winner, the Target twist, three
    takeaways, and the debrief questions.
+5. When class is done, click **End game for everyone** on the results screen. (Phones that
+   lock or drop Wi-Fi keep their seat and score; a host screen that sleeps has 10 minutes to
+   come back.)
 
 | Round | Organization | Answer |
 |---|---|---|

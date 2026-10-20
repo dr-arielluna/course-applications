@@ -99,6 +99,7 @@ function publicState(room) {
     phase: room.phase,
     round: room.round,
     total: GAME.rounds.length,
+    story: GAME.story,
     defenses: PUBLIC_DEFENSES,
     scoreboard: scoreboard(room),
     players: Object.values(room.players).map((p) => p.name),
@@ -236,6 +237,15 @@ io.on("connection", (socket) => {
     room.phase = "lobby"; room.round = 0;
     Object.values(room.players).forEach((p) => { p.score = 0; p.answer = null; p.counted = false; });
     broadcast(socket.data.pin);
+  });
+
+  // the deliberate end: the host closes the game for every device
+  socket.on("host:end", () => {
+    const pin = socket.data.pin; const room = rooms[pin];
+    if (!room || socket.id !== room.hostId) return;
+    clearTimeout(room.closeTimer);
+    io.to(pin).emit("host:gone");
+    delete rooms[pin];
   });
 
   socket.on("disconnect", () => {

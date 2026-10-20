@@ -23,11 +23,16 @@ Open **http://localhost:3000** → **Host** on your screen. On another device on
 Wi-Fi, open `http://<your-computer-ip>:3000` → **Join**. Needs Node 18+.
 
 ## How a class runs
-1. Open `/host.html` on the projector; read the story and the six defenses aloud.
+1. Open `/host.html` on the projector; read the story and the six defenses aloud (both are
+   shown on the lobby screen under the PIN).
 2. Students open the site → **Join** → PIN + name.
 3. Click **Start**. Each round: read the attacker's move, let students pick, then **Reveal**
-   (auto-scores: +10, final round +20). **Next** moves on.
+   (auto-scores: +10, final round +20). Students can change their pick until you reveal.
+   **Next** moves on.
 4. Bonus round (+10), then the **Target reveal** and the winner.
+5. When class is done, click **End game for everyone** on the results screen. (Phones that
+   lock or drop Wi-Fi keep their seat and score; a host screen that sleeps has 10 minutes to
+   come back.)
 
 ## Editing the game
 All teaching content — the story, the six defenses, the five rounds, the answer key,

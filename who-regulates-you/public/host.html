@@ -118,8 +118,9 @@ function render(){
         <ul class="stack" style="margin:0;padding-left:20px">${ST.lessons.map(([h,b])=>`<li><b>${esc(h)}</b> ${esc(b)}</li>`).join("")}</ul></div>
       ${ST.debrief&&ST.debrief.length?`<div class="card stack"><span class="kicker navy">💬 Talk it through</span>
         <ul class="stack" style="margin:0;padding-left:20px">${ST.debrief.map(q=>`<li>${esc(q)}</li>`).join("")}</ul>${ST.debriefKey?`<p class="note">📘 Answer key (host only): ${esc(ST.debriefKey)}</p>`:""}</div>`:""}
-      <div class="row"><button class="btn primary" id="again">Play again (same teams)</button></div>`;
+      <div class="row"><button class="btn primary" id="again">Play again (same teams)</button> <button class="btn" id="endgame">End game for everyone</button></div>`;
     const a=document.getElementById("again"); if(a) a.onclick=()=>socket.emit("host:restart");
+    const eg=document.getElementById("endgame"); if(eg) eg.onclick=()=>{ if(confirm("End the game on every device?")){ socket.emit("host:end"); try{ sessionStorage.removeItem(HKEY); }catch(e){} app.innerHTML="<div class='card stack'><h2>Game ended</h2><p class='muted'>Every device now shows the end screen.</p><a class='btn primary' href='host.html'>Start a new game</a></div>"; } };
     return;
   }
   app.innerHTML="<div class='card'>…</div>";

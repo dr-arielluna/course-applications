@@ -304,6 +304,15 @@ io.on("connection", (socket) => {
     broadcast(socket.data.pin);
   });
 
+  // the deliberate end: the host closes the game for every device
+  socket.on("host:end", () => {
+    const pin = socket.data.pin; const room = rooms[pin];
+    if (!room || socket.id !== room.hostId) return;
+    clearTimeout(room.closeTimer);
+    io.to(pin).emit("host:gone");
+    delete rooms[pin];
+  });
+
   socket.on("disconnect", () => {
     const pin = socket.data.pin; const room = rooms[pin];
     if (!room) return;
