@@ -32,9 +32,13 @@ function defenseGrid(){
   return `<div class="grid-def">` + ST.defenses.map(d=>`
     <div class="def"><span class="tag">${d.id}</span><span><span class="name">${esc(d.name)}</span><br><span class="desc">${esc(d.desc)}</span></span></div>`).join("") + `</div>`;
 }
+/* ties: places are shared (1, 1, 3); these turn a rank and a list of names into words */
+function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function names(list){ if(list.length>3) return `${list.length} other teams`; return list.length<2 ? (list[0]||"") : list.slice(0,-1).join(", ")+" & "+list[list.length-1]; }
+
 function board(){
   if(!ST.scoreboard.length) return "";
-  return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${i===0&&t.score>0?'win':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
+  return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${t.rank===1&&t.score>0?'win':''}"><td>${t.tied?"T-":""}${t.rank}</td><td>${esc(t.name)}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
 }
 function countsBlock(){
   if(!ST.counts) return "";
@@ -131,13 +135,23 @@ function render(){
     return;
   }
   if(p==="results"){
-    const win = ST.scoreboard[0];
-    const medals = ["🥇","🥈","🥉"];
-    const podium = ST.scoreboard.slice(0,3).map((t,i)=>`<div class="medal"><span class="m">${medals[i]}</span><span class="mn">${esc(t.name)}</span><span class="ms">${t.score}</span></div>`).join("");
+    const sb = ST.scoreboard, top = sb.length ? sb[0].score : 0;
+    const champs = top > 0 ? sb.filter(t => t.rank === 1) : [];
+    const medals = {1:"🥇", 2:"🥈", 3:"🥉"};
+    // one podium step per place; tied teams share the step (after a tie for 1st there is no 2nd)
+    const podium = top > 0 ? [1,2,3].map(r => {
+      const g = sb.filter(t => t.rank === r && t.score > 0); if(!g.length) return "";
+      return `<div class="medal"><span class="m">${medals[r]}</span><span class="mn">${g.map(t=>esc(t.name)).join("<br>")}</span><span class="ms">${g.length>1?"T-":""}${ord(r)} · ${g[0].score}</span></div>`;
+    }).join("") : "";
+    const banner = !champs.length
+      ? `<h1>No points this round</h1><p class="muted">Nobody scored — try another round?</p>`
+      : champs.length === 1
+        ? `<h1>🏆 ${esc(champs[0].name)}</h1><div><span class="pill gold">Breach Busters</span></div>`
+        : `<h1>🏆 It's a tie!</h1><h2 style="margin:0">${esc(names(champs.map(c=>c.name)))}</h2><div><span class="pill gold">Co-champions · Breach Busters</span></div>`;
     app.innerHTML = `
-      <div class="card center stack"><span class="kicker gold">Champions</span>
-        <h1>🏆 ${win?esc(win.name):"—"}</h1><div><span class="pill gold">Breach Busters</span></div>
-        <div class="podium">${podium}</div></div>
+      <div class="card center stack"><span class="kicker gold">${champs.length>1?"Champions — tied":"Champions"}</span>
+        ${banner}
+        ${podium?`<div class="podium">${podium}</div>`:""}</div>
       <div class="card stack"><span class="kicker navy">Final scoreboard</span>${board()}</div>
       <div class="card stack"><span class="kicker">The reveal</span><p>${esc(ST.reveal)}</p>
         <div><b>Why British Airways lost:</b></div>

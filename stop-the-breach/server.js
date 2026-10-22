@@ -81,9 +81,23 @@ function makePin() {
   return pin;
 }
 function scoreboard(room) {
-  return Object.values(room.players)
+  // Competition ranking: tied teams share a place (1, 1, 3) and are listed alphabetically —
+  // never ordered by who happened to join first.
+  const rows = Object.values(room.players)
     .map((p) => ({ name: p.name, score: p.score }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  rows.forEach((r) => {
+    r.rank = 1 + rows.filter((o) => o.score > r.score).length;
+    r.tied = rows.filter((o) => o.score === r.score).length > 1;
+  });
+  return rows;
+}
+// one team's own place, sent privately so duplicate team names can't confuse it
+function placeOf(room, p) {
+  const all = Object.values(room.players);
+  return { rank: 1 + all.filter((o) => o.score > p.score).length,
+           tiedWith: all.filter((o) => o !== p && o.score === p.score).map((o) => o.name),
+           of: all.length, topScore: Math.max(0, ...all.map((o) => o.score)) };
 }
 function answeredCount(room) {
   return Object.values(room.players).filter((p) => p.answer != null).length;
@@ -129,7 +143,7 @@ function broadcast(pin) {
   io.to(pin).emit("state", publicState(room));
   // personal line to each player
   Object.values(room.players).forEach((p) => {
-    if (p.connected) io.to(p.socketId).emit("you", { name: p.name, score: p.score, answer: p.answer });
+    if (p.connected) io.to(p.socketId).emit("you", { name: p.name, score: p.score, answer: p.answer, place: placeOf(room, p) });
   });
 }
 function resetAnswers(room) {

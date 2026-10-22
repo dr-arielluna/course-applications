@@ -53,7 +53,7 @@ function screenJoin(err){
 
 socket.on("join:ok", d => { joined=true; ME.name=d.name; SEAT={pin:d.pin, name:d.name}; ss.set(KEY+":seat",SEAT); render(); });
 socket.on("join:error", msg => { joined=false; SEAT=null; ss.set(KEY+":seat",null); screenJoin(msg); });
-socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; if(joined) render(); });
+socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; ME.place=d.place||null; if(joined) render(); });
 socket.on("state", s => { ST=s; ST._at=Date.now(); if(joined){ render(); paintTimer(); } });
 socket.on("host:gone", () => { joined=false; SEAT=null; ss.set(KEY+":seat",null); app.innerHTML="<div class='card stack'><h2>Game ended</h2><p class='muted'>The host closed the game. Refresh to join a new one.</p></div>"; });
 
@@ -84,6 +84,10 @@ function paintTimer(){
   el.innerHTML = `<span class="tlabel">${label}</span><span class="tbar"><i style="width:${Math.max(0,Math.min(100,left/t.totalMs*100))}%"></i></span>`;
 }
 setInterval(paintTimer, 250);
+
+/* ties: places are shared (1, 1, 3); these turn a rank and a list of names into words */
+function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function names(list){ if(list.length>3) return `${list.length} other teams`; return list.length<2 ? (list[0]||"") : list.slice(0,-1).join(", ")+" & "+list[list.length-1]; }
 
 function render(){
   if(!joined){ screenJoin(); return; }
@@ -133,10 +137,15 @@ function render(){
     return;
   }
   if(p==="results"){
-    const me = ST.scoreboard.findIndex(t=>t.name===ME.name);
+    const pl = ME.place;
+    const placeLine = !pl ? "" : pl.topScore===0 ? "Nobody scored this time."
+      : pl.rank===1 && !pl.tiedWith.length ? "🏆 You're the champions!"
+      : pl.rank===1 ? `🏆 You're co-champions! Tied for 1st with ${esc(names(pl.tiedWith))}.`
+      : pl.tiedWith.length ? `You tied for ${ord(pl.rank)} of ${pl.of} (with ${esc(names(pl.tiedWith))}).`
+      : `You placed ${ord(pl.rank)} of ${pl.of}.`;
     app.innerHTML = `${scoreHeader()}
       <div class="card center stack"><span class="kicker gold">Final</span><div class="big">${ME.score}</div>
-        <p class="muted">${me>=0?`You placed #${me+1} of ${ST.scoreboard.length}`:""}</p></div>
+        <p class="muted">${placeLine}</p></div>
       <div class="card stack"><span class="kicker">What really happened</span><p>${esc(ST.reveal)}</p>
         <ul class="stack" style="margin:0;padding-left:20px">${ST.lessons.map(([h,b])=>`<li><b>${esc(h)}</b> ${esc(b)}</li>`).join("")}</ul></div>`;
     return;

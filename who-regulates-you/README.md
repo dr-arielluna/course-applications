@@ -24,6 +24,8 @@ A HIPAA · B GLBA · C PCI DSS · D HIPAA + PCI DSS · E GLBA + PCI DSS · F Non
    clock holds once every team has answered; **⏸ Pause** and **+30s** (which also re-opens
    answers after time-up) sit next to the Reveal button. For testing, `ROUND_SECONDS` /
    `BONUS_SECONDS` environment variables shorten it.
+   **Ties:** tied teams share a place (1st, 1st, 3rd) and are listed alphabetically. A tie for
+   the top score names everyone as **co-champions**; if nobody scores, there is no champion.
 5. When class is done, click **End game for everyone** on the results screen. (Phones that
    lock or drop Wi-Fi keep their seat and score; a host screen that sleeps has 10 minutes to
    come back.)
