@@ -169,6 +169,7 @@ function publicState(room) {
     answered: answeredCount(room),
     playerCount: Object.keys(room.players).length,
   };
+  st.timer = (room.phase === "round" || room.phase === "bonus") ? publicTimer(room) : null;
   if (room.phase === "round" || room.phase === "reveal") {
     const r = GAME.rounds[room.round];
     st.move = r.move; st.points = r.points; st.customChoices = !!r.choices;
@@ -198,6 +199,43 @@ function broadcast(pin) {
 }
 function resetAnswers(room) {
   Object.values(room.players).forEach((p) => { p.answer = null; p.counted = false; });
+}
+
+/* ------------------------------- TIMER ---------------------------------- */
+/* Each round runs a visible countdown (120 s; bonus 60 s). At zero, answers lock — but the
+ * host still decides when to reveal, so discussion is never cut off. Once every connected
+ * team has answered, the clock holds; it resumes if a team rejoins without an answer.
+ * The host can pause/resume or add 30 s. */
+const ROUND_SECONDS = Number(process.env.ROUND_SECONDS) || 120, BONUS_SECONDS = Number(process.env.BONUS_SECONDS) || 60, EXTEND_SECONDS = 30;
+function clearTimer(room) { if (room.timer) clearTimeout(room.timer.handle); room.timer = null; }
+function timerLeft(t) { return (t.paused || t.locked || t.held) ? t.remainingMs : Math.max(0, t.endsAt - Date.now()); }
+function armTimer(pin, room) {
+  const t = room.timer; clearTimeout(t.handle);
+  t.handle = setTimeout(() => {
+    if (rooms[pin] !== room || room.timer !== t) return;
+    t.locked = true; t.remainingMs = 0; broadcast(pin);
+  }, Math.max(0, t.endsAt - Date.now()));
+}
+function startTimer(pin, room, seconds) {
+  clearTimer(room);
+  room.timer = { totalMs: seconds * 1000, endsAt: Date.now() + seconds * 1000, remainingMs: seconds * 1000,
+                 paused: false, held: false, locked: false, handle: null };
+  armTimer(pin, room);
+}
+function allAnswered(room) {
+  const on = Object.values(room.players).filter((p) => p.connected);
+  return on.length > 0 && on.every((p) => p.answer != null);
+}
+function syncHold(pin, room) {
+  const t = room.timer; if (!t || t.locked) return;
+  const all = allAnswered(room);
+  if (all && !t.held) { t.remainingMs = timerLeft(t); t.held = true; clearTimeout(t.handle); }
+  else if (!all && t.held) { t.held = false; if (!t.paused) { t.endsAt = Date.now() + t.remainingMs; armTimer(pin, room); } }
+}
+function publicTimer(room) {
+  const t = room.timer; if (!t) return null;
+  return { totalMs: t.totalMs, remainingMs: timerLeft(t), running: !t.paused && !t.locked && !t.held,
+           paused: t.paused, held: t.held, locked: t.locked };
 }
 
 /* ------------------------------ SOCKETS --------------------------------- */
@@ -239,13 +277,14 @@ io.on("connection", (socket) => {
     if (p) { p.socketId = socket.id; p.connected = true; }   // returning device: keep name and score
     else room.players[token] = { name, score: 0, answer: null, counted: false, socketId: socket.id, connected: true };
     socket.emit("join:ok", { pin, name: room.players[token].name });
+    syncHold(pin, room);
     broadcast(pin);
   });
 
   socket.on("host:start", () => {
     const room = rooms[socket.data.pin];
     if (!room || socket.id !== room.hostId) return;
-    room.phase = "round"; room.round = 0; resetAnswers(room);
+    room.phase = "round"; room.round = 0; resetAnswers(room); startTimer(socket.data.pin, room, ROUND_SECONDS);
     broadcast(socket.data.pin);
   });
 
@@ -255,15 +294,18 @@ io.on("connection", (socket) => {
     const p = room.players[socket.data.token];
     if (!p) return;
     if (room.phase !== "round" && room.phase !== "bonus") return;
+    if (room.timer && room.timer.locked) return; // time is up for this round
     // answers can be changed freely until the host reveals (reveal flips the phase)
     if (!currentChoices(room).some((d) => d.id === letter)) return;
     p.answer = letter;
+    syncHold(socket.data.pin, room);
     broadcast(socket.data.pin);
   });
 
   socket.on("host:reveal", () => {
     const room = rooms[socket.data.pin];
     if (!room || socket.id !== room.hostId) return;
+    clearTimer(room);
     if (room.phase === "round") {
       const r = GAME.rounds[room.round];
       Object.values(room.players).forEach((p) => {
@@ -286,12 +328,12 @@ io.on("connection", (socket) => {
     if (!room || socket.id !== room.hostId) return;
     if (room.phase === "reveal") {
       if (room.round + 1 < GAME.rounds.length) {
-        room.round += 1; room.phase = "round"; resetAnswers(room);
+        room.round += 1; room.phase = "round"; resetAnswers(room); startTimer(socket.data.pin, room, ROUND_SECONDS);
       } else {
-        room.phase = "bonus"; resetAnswers(room);
+        room.phase = "bonus"; resetAnswers(room); startTimer(socket.data.pin, room, BONUS_SECONDS);
       }
     } else if (room.phase === "bonusReveal") {
-      room.phase = "results";
+      room.phase = "results"; clearTimer(room);
     }
     broadcast(socket.data.pin);
   });
@@ -299,8 +341,27 @@ io.on("connection", (socket) => {
   socket.on("host:restart", () => {
     const room = rooms[socket.data.pin];
     if (!room || socket.id !== room.hostId) return;
-    room.phase = "lobby"; room.round = 0;
+    room.phase = "lobby"; room.round = 0; clearTimer(room);
     Object.values(room.players).forEach((p) => { p.score = 0; p.answer = null; p.counted = false; });
+    broadcast(socket.data.pin);
+  });
+
+  // timer controls (host only): pause/resume, and +30 s (also re-opens answers after time-up)
+  socket.on("host:pause", () => {
+    const room = rooms[socket.data.pin];
+    if (!room || socket.id !== room.hostId || !room.timer || room.timer.locked) return;
+    const t = room.timer;
+    if (!t.paused) { t.remainingMs = timerLeft(t); t.paused = true; clearTimeout(t.handle); }
+    else { t.paused = false; if (!t.held) { t.endsAt = Date.now() + t.remainingMs; armTimer(socket.data.pin, room); } }
+    broadcast(socket.data.pin);
+  });
+  socket.on("host:extend", () => {
+    const room = rooms[socket.data.pin];
+    if (!room || socket.id !== room.hostId || !room.timer) return;
+    const t = room.timer, left = timerLeft(t) + EXTEND_SECONDS * 1000;
+    t.locked = false; t.remainingMs = left; t.totalMs = Math.max(t.totalMs, left);
+    if (!t.paused && !t.held) { t.endsAt = Date.now() + left; armTimer(socket.data.pin, room); }
+    syncHold(socket.data.pin, room);
     broadcast(socket.data.pin);
   });
 
@@ -308,7 +369,7 @@ io.on("connection", (socket) => {
   socket.on("host:end", () => {
     const pin = socket.data.pin; const room = rooms[pin];
     if (!room || socket.id !== room.hostId) return;
-    clearTimeout(room.closeTimer);
+    clearTimeout(room.closeTimer); clearTimer(room);
     io.to(pin).emit("host:gone");
     delete rooms[pin];
   });
@@ -320,7 +381,7 @@ io.on("connection", (socket) => {
       // keep the game alive while the host's screen sleeps; close it only if they never come back
       clearTimeout(room.closeTimer);
       room.closeTimer = setTimeout(() => {
-        if (rooms[pin] === room) { io.to(pin).emit("host:gone"); delete rooms[pin]; }
+        if (rooms[pin] === room) { clearTimer(room); io.to(pin).emit("host:gone"); delete rooms[pin]; }
       }, HOST_GRACE_MS);
       return;
     }
@@ -329,6 +390,7 @@ io.on("connection", (socket) => {
       if (p && p.socketId === socket.id) {
         if (room.phase === "lobby") delete room.players[socket.data.token]; // nothing to lose yet
         else p.connected = false;                                           // keep seat and score
+        syncHold(pin, room);
         broadcast(pin);
       }
     }

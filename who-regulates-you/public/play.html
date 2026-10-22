@@ -54,7 +54,7 @@ function screenJoin(err){
 socket.on("join:ok", d => { joined=true; ME.name=d.name; SEAT={pin:d.pin, name:d.name}; ss.set(KEY+":seat",SEAT); render(); });
 socket.on("join:error", msg => { joined=false; SEAT=null; ss.set(KEY+":seat",null); screenJoin(msg); });
 socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; if(joined) render(); });
-socket.on("state", s => { ST=s; if(joined) render(); });
+socket.on("state", s => { ST=s; ST._at=Date.now(); if(joined){ render(); paintTimer(); } });
 socket.on("host:gone", () => { joined=false; SEAT=null; ss.set(KEY+":seat",null); app.innerHTML="<div class='card stack'><h2>Game ended</h2><p class='muted'>The host closed the game. Refresh to join a new one.</p></div>"; });
 
 function defenseButtons(disabled, highlightWorks){
@@ -70,6 +70,21 @@ function wireDefense(){
 }
 function scoreHeader(){ return `<div id="conn" class="note" hidden>Reconnecting… your score is saved.</div><div class="row spread"><span class="chip">${esc(ME.name)}</span><span class="chip">Score: <b>${ME.score}</b></span></div>`; }
 
+/* round countdown — the server owns the clock; this only paints it between updates */
+function timerHTML(){ return ST && ST.timer ? `<div class="timer" id="timer"></div>` : ""; }
+function timeUp(){ return !!(ST && ST.timer && ST.timer.locked); }
+function paintTimer(){
+  const el=document.getElementById("timer"); if(!el||!ST||!ST.timer) return;
+  const t=ST.timer, left=t.running ? Math.max(0, t.remainingMs-(Date.now()-(ST._at||Date.now()))) : t.remainingMs;
+  const s=Math.ceil(left/1000), clock=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  const label = t.locked ? "⏰ Time's up — answers are locked"
+              : t.held ? `✓ Everyone has answered · ${clock} left`
+              : t.paused ? `⏸ Paused · ${clock}` : `⏱ ${clock}`;
+  el.className = "timer" + ((t.locked || (t.running && s<=15)) ? " low" : "");
+  el.innerHTML = `<span class="tlabel">${label}</span><span class="tbar"><i style="width:${Math.max(0,Math.min(100,left/t.totalMs*100))}%"></i></span>`;
+}
+setInterval(paintTimer, 250);
+
 function render(){
   if(!joined){ screenJoin(); return; }
   if(!ST){ app.innerHTML="<div class='card'>Connecting…</div>"; return; }
@@ -84,10 +99,11 @@ function render(){
       <div class="card stack">
         <span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
         <h2>${esc(ST.move)}</h2>
-        ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Changed your mind? Tap a different one until the host reveals.</div>` : `<p class="muted">Tap the rule that governs this organization.</p>`}
-        ${defenseButtons(false, null)}
+        ${timerHTML()}
+        ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Changed your mind? Tap a different one until time runs out or the host reveals.</div>` : `<p class="muted">Tap the rule that governs this organization.</p>`}
+        ${defenseButtons(timeUp(), null)}
       </div>`;
-    wireDefense();
+    if(!timeUp()) wireDefense();
     return;
   }
   if(p==="reveal"){
@@ -105,9 +121,10 @@ function render(){
     app.innerHTML = `${scoreHeader()}
       <div class="card stack"><span class="kicker gold">Bonus · +${ST.points}</span>
         <h2>${esc(ST.prompt)}</h2>
-        ${locked?`<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Tap a different one to change it until the host scores the bonus.</div>`:`<p class="muted">Pick the one you'd build on.</p>`}
-        ${defenseButtons(false, null)}</div>`;
-    wireDefense();
+        ${timerHTML()}
+        ${locked?`<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Tap a different one to change it until time runs out or the host scores the bonus.</div>`:`<p class="muted">Pick the one you'd build on.</p>`}
+        ${defenseButtons(timeUp(), null)}</div>`;
+    if(!timeUp()) wireDefense();
     return;
   }
   if(p==="bonusReveal"){

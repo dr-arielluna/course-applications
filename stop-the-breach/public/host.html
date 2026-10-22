@@ -25,7 +25,7 @@ const joinURL = () => location.origin + "/play.html";
 
 socket.on("connect", () => { socket.emit("host:create", { origin: location.origin, resume: savedHost() }); });
 socket.on("host:created", d => { PIN = d.pin; QRDATA = d.qr || null; try { sessionStorage.setItem(HKEY, JSON.stringify({ pin: d.pin, hostKey: d.hostKey })); } catch (e) {} render(); });
-socket.on("state", s => { ST = s; render(); });
+socket.on("state", s => { ST = s; ST._at = Date.now(); render(); paintTimer(); });
 socket.on("host:gone", () => { app.innerHTML = "<div class='card'>Host session ended.</div>"; });
 
 function defenseGrid(){
@@ -43,6 +43,29 @@ function countsBlock(){
     const n=ST.counts[k], correct = ST.works && ST.works.includes(k);
     return `<div class="count"><span class="lbl"><b>${k}</b> ${n}</span><span class="bar" style="flex:1"><i style="width:${Math.round(n/max*100)}%;background:${correct?'var(--good)':'var(--accent)'}"></i></span></div>`;
   }).join("");
+}
+
+/* round countdown — the server owns the clock; this only paints it between updates */
+function timerHTML(){ return ST && ST.timer ? `<div class="timer big" id="timer"></div>` : ""; }
+function timeUp(){ return !!(ST && ST.timer && ST.timer.locked); }
+function paintTimer(){
+  const el=document.getElementById("timer"); if(!el||!ST||!ST.timer) return;
+  const t=ST.timer, left=t.running ? Math.max(0, t.remainingMs-(Date.now()-(ST._at||Date.now()))) : t.remainingMs;
+  const s=Math.ceil(left/1000), clock=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  const label = t.locked ? "⏰ Time's up — answers are locked"
+              : t.held ? `✓ Everyone has answered · ${clock} left`
+              : t.paused ? `⏸ Paused · ${clock}` : `⏱ ${clock}`;
+  el.className = "timer big" + ((t.locked || (t.running && s<=15)) ? " low" : "");
+  el.innerHTML = `<span class="tlabel">${label}</span><span class="tbar"><i style="width:${Math.max(0,Math.min(100,left/t.totalMs*100))}%"></i></span>`;
+}
+setInterval(paintTimer, 250);
+function timerControls(){
+  if(!ST || !ST.timer) return "";
+  return `<button class="btn" id="tpause" ${ST.timer.locked?"disabled":""}>${ST.timer.paused?"▶ Resume":"⏸ Pause"}</button> <button class="btn" id="tmore">+30s</button>`;
+}
+function wireTimer(){
+  const a=document.getElementById("tpause"); if(a) a.onclick=()=>socket.emit("host:pause");
+  const b=document.getElementById("tmore"); if(b) b.onclick=()=>socket.emit("host:extend");
 }
 
 function render(){
@@ -72,18 +95,20 @@ function render(){
       <div class="card stack">
         <div class="row spread"><span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":" · "+ST.points+" pts"}</span>
           <span class="muted">${ST.answered} of ${ST.playerCount} answered</span></div>
+        ${revealed?"":timerHTML()}
         <h2>${esc(ST.move)}</h2>
         ${revealed ? `<div class="feedback good"><b>Works: ${ST.works.join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss</b> — ${esc(ST.discuss)}</div>`:""}`
                    : `<p class="muted">Students are choosing a defense on their devices…</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
         <div class="hr"></div>
         <div class="row spread">
           ${revealed ? `<span></span><button class="btn primary lg" id="next">${ST.round+1<ST.total?"Next round":"Bonus round"}</button>`
-                     : `<span class="note">Give teams a moment, then reveal.</span><button class="btn primary lg" id="reveal">Reveal answer</button>`}
+                     : `<span class="row">${timerControls()}</span><button class="btn primary lg" id="reveal">Reveal answer</button>`}
         </div>
       </div>
       <div class="card stack"><span class="kicker navy">Scoreboard</span>${board()}</div>`;
     const rv=document.getElementById("reveal"); if(rv) rv.onclick=()=>socket.emit("host:reveal");
     const nx=document.getElementById("next"); if(nx) nx.onclick=()=>socket.emit("host:next");
+    wireTimer();
     return;
   }
   if(p==="bonus" || p==="bonusReveal"){
@@ -92,15 +117,17 @@ function render(){
       <div class="card stack">
         <span class="kicker gold">Bonus · +${ST.points}</span>
         <h2>${esc(ST.prompt)}</h2>
+        ${revealed?"":timerHTML()}
         ${revealed ? `<div class="feedback good"><b>Everyone who answered earns +${ST.points}.</b> Any defense is defensible — the point is making and arguing a choice.</div>`
                    : `<p class="muted">${ST.answered} of ${ST.playerCount} answered</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
         <div class="hr"></div>
-        <div class="row spread"><span></span>
+        <div class="row spread"><span class="row">${revealed?"":timerControls()}</span>
           ${revealed ? `<button class="btn primary lg" id="next">See the winner</button>` : `<button class="btn primary lg" id="reveal">Score the bonus</button>`}</div>
       </div>
       <div class="card stack"><span class="kicker navy">Scoreboard</span>${board()}</div>`;
     const rv=document.getElementById("reveal"); if(rv) rv.onclick=()=>socket.emit("host:reveal");
     const nx=document.getElementById("next"); if(nx) nx.onclick=()=>socket.emit("host:next");
+    wireTimer();
     return;
   }
   if(p==="results"){

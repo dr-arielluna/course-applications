@@ -32,6 +32,11 @@ Wi-Fi, open `http://<your-computer-ip>:3000` → **Join**. Needs Node 18+.
    (auto-scores: +10, final round +20). Students can change their pick until you reveal.
    **Next** moves on.
 4. Bonus round (+10), then the **British Airways reveal**, the winner, and debrief prompts.
+   **Round clock:** each round has a 2-minute countdown (bonus: 1 minute) on the projector and
+   every phone. At 0:00 answers lock, but nothing reveals until you click **Reveal**. The
+   clock holds once every team has answered; **⏸ Pause** and **+30s** (which also re-opens
+   answers after time-up) sit next to the Reveal button. For testing, `ROUND_SECONDS` /
+   `BONUS_SECONDS` environment variables shorten it.
 5. When class is done, click **End game for everyone** on the results screen. (Phones that
    lock or drop Wi-Fi keep their seat and score; a host screen that sleeps has 10 minutes to
    come back.)

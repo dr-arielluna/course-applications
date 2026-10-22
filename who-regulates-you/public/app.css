@@ -66,3 +66,10 @@ button.def.wrong{border-color:var(--bad); background:var(--bad-bg)} button.def.w
 .count{display:flex;align-items:center;gap:10px;margin:4px 0}
 .count .lbl{width:150px}
 .hr{height:1px;background:var(--line);margin:14px 0}
+
+/* round countdown */
+.timer{display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:1.05rem}
+.timer .tbar{height:10px; border-radius:999px; background:var(--line); overflow:hidden}
+.timer .tbar i{display:block; height:100%; background:var(--accent); transition:width .25s linear}
+.timer.low .tlabel{color:var(--bad)} .timer.low .tbar i{background:var(--bad)}
+.timer.big{font-size:1.9rem; gap:10px} .timer.big .tbar{height:16px}   /* projector-sized on the host screen */
