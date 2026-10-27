@@ -62,3 +62,15 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  - type: web
+    name: cloud-breach
+    runtime: node
+    plan: free
+    rootDir: cloud-breach
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

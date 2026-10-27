@@ -10,9 +10,10 @@ repo root carries the shared Render blueprint.
 | Firewall Lab | [`firewall-lab/`](firewall-lab/) | ISI 315 Week 6 — build a default-deny firewall rulebase (ordered, first-match-wins) and test it against a policy; spot holes and shadowed rules (§9.2–9.4). |
 | Who Regulates You? | [`who-regulates-you/`](who-regulates-you/) | ISI 315 Week 7 — live, multi-device compliance game: decide whether HIPAA, GLBA, PCI DSS, or none governs each organization (same engine as Stop the Breach). |
 | Stop the Breach: Checkout | [`checkout-breach/`](checkout-breach/) | ISI 315 Week 8 — live, multi-device software-security game based on British Airways 2018: stop a stolen partner login, a plaintext admin password, a tampered checkout script, and an XSS attempt (SRI, CSP, output encoding). |
+| Stop the Breach: Cloud | [`cloud-breach/`](cloud-breach/) | ISI 315 Week 9 — live, multi-device cloud-security game based on Capital One 2019: a misconfigured web-application firewall, a server tricked into handing over its keys, an over-permissioned role, and tokenization limiting the damage. Every defense sits on the customer's side of the shared-responsibility line. |
 
-The blueprint defines **all five** services, so one Render deploy creates
-`stop-the-breach`, `signature-lab`, `firewall-lab`, `who-regulates-you`, and `checkout-breach`, each from its own subfolder.
+The blueprint defines **all six** services, so one Render deploy creates
+`stop-the-breach`, `signature-lab`, `firewall-lab`, `who-regulates-you`, `checkout-breach`, and `cloud-breach`, each from its own subfolder.
 
 ---
 
