@@ -1,49 +1,41 @@
-# Stop the Breach: Cloud — live classroom web app
+# Stop the Breach: Cloud & IoT — live classroom web app (ISI 315 Week 9, Tuesday)
 
-ISI 315 Week 9 (Cloud Security) — the Stop the Breach engine with a scenario based on the
-Capital One breach of 2019 (misconfigured web-application firewall, a server tricked into
-handing over its cloud keys, an over-permissioned role, and tokenization limiting the damage).
-Every defense sits on the customer's side of the shared-responsibility line. The teacher
-hosts on the projector and gets a 4-digit PIN; students join on their own phones/laptops,
-pick a defense each round, and the scoreboard updates live across every device.
+A Kahoot-style team game in two acts, built on the *Who Regulates You?* engine (each round can
+bring its own answer choices). The teacher hosts on the projector; teams join on their phones
+with the QR code or PIN and pick a defense each round.
 
-- **Host screen:** `/host.html` — the PIN, the live scoreboard, round controls.
-- **Student device:** `/play.html` — enter the PIN + a name, then tap a defense each round.
-- The **answer key lives only on the server**, so students can't read ahead in page source.
-- Works across any modern browser (Edge, Chrome, Firefox) on any device.
+- **Act 1 · Cloud (rounds 1–5)** — based on Capital One 2019: a misconfigured web-application
+  firewall, a server tricked into handing over its cloud keys, an over-permissioned role,
+  unwatched activity and downloads, and tokenization limiting the damage. Every defense sits on
+  the customer's side of the shared-responsibility line.
+- **Act 2 · IoT (rounds 6–10)** — based on Mirai 2016, on a fictional smart campus: devices
+  reachable from the internet, factory passwords, spread across the network, a flood attack, and
+  devices that can't be updated. The controls sit around the device, not on it.
 
-> **Deploying?** See the repo root [`../README.md`](../README.md) for the full
-> GitHub → Render walkthrough. (This app is a subfolder of the `course-applications`
-> repo; Render's blueprint lives at the repo root and targets this folder via `rootDir`.)
+## What makes it a game
+- **Damage meters** (Records stolen, SSNs exposed, Campus devices hijacked, Attack traffic):
+  at each reveal, if fewer than half the teams chose a working defense, the attacker gets through
+  and that act's meter climbs. A sharp class keeps them at zero.
+- **Streak bonus:** +5 each time a team reaches 3, 6, 9… correct answers in a row (🔥 on the
+  scoreboard).
+- **📊 Show the votes:** locks answers and shows how the class split, before the answer.
+- **Round clock:** 2 minutes (bonus 1 minute); answers lock at 0:00 but nothing reveals until
+  you click Reveal. ⏸ Pause and +30s next to Reveal.
+- Fair ties (co-champions), End game for everyone, phones that rejoin after dropping.
 
-## Run it locally
+## How a class runs (about 25 minutes, optional extra)
+1. Open `/host.html` on the projector; read the story and Act 1's six defenses from the lobby.
+2. Teams scan the QR code and pick a team name. Click **Start**.
+3. Each round: read the move → teams discuss and pick → optionally **📊 Show the votes** →
+   **Reveal** (meter result, answer, why, discussion prompt) → **Next**.
+4. After round 10: bonus, the Capital One + Mirai reveal, lessons, and debrief prompts
+   (with a host-only answer key). Then **End game for everyone**.
+
+## Run locally
 ```bash
 cd cloud-breach
 npm install
-npm start
+npm start            # http://localhost:3000  → Host
+ROUND_SECONDS=5 npm start   # short clock for testing
 ```
-Open **http://localhost:3000** → **Host** on your screen. On another device on the same
-Wi-Fi, open `http://<your-computer-ip>:3000` → **Join**. Needs Node 18+.
-
-## How a class runs
-1. Open `/host.html` on the projector; read the story and the six defenses aloud (both are
-   shown on the lobby screen under the PIN).
-2. Students open the site → **Join** → PIN + name.
-3. Click **Start**. Each round: read the attacker's move, let students pick, then **Reveal**
-   (auto-scores: +10, final round +20). Students can change their pick until you reveal.
-   **Next** moves on.
-4. Bonus round (+10), then the **Capital One reveal**, the winner, and debrief prompts.
-   **Round clock:** each round has a 2-minute countdown (bonus: 1 minute) on the projector and
-   every phone. At 0:00 answers lock, but nothing reveals until you click **Reveal**. The
-   clock holds once every team has answered; **⏸ Pause** and **+30s** (which also re-opens
-   answers after time-up) sit next to the Reveal button. For testing, `ROUND_SECONDS` /
-   `BONUS_SECONDS` environment variables shorten it.
-   **Ties:** tied teams share a place (1st, 1st, 3rd) and are listed alphabetically. A tie for
-   the top score names everyone as **co-champions**; if nobody scores, there is no champion.
-5. When class is done, click **End game for everyone** on the results screen. (Phones that
-   lock or drop Wi-Fi keep their seat and score; a host screen that sleeps has 10 minutes to
-   come back.)
-
-## Editing the game
-All teaching content — the story, the six defenses, the six rounds, the answer key,
-the reveal, and the lessons — lives in `server.js` under the `GAME` object.
+All teaching content lives in `server.js` under `GAME` (story, defenses, rounds, meters, reveal).

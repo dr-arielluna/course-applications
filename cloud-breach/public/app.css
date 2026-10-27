@@ -64,7 +64,7 @@ button.def.wrong{border-color:var(--bad); background:var(--bad-bg)} button.def.w
 .medal .mn{font-weight:700;flex:1;text-align:left}
 .medal .ms{font-variant-numeric:tabular-nums;font-weight:700;color:var(--muted)}
 .count{display:flex;align-items:center;gap:10px;margin:4px 0}
-.count .lbl{width:150px}
+.count .lbl{width:340px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .count .cn{width:2.2em; text-align:right; font-weight:800; font-variant-numeric:tabular-nums}
 .hr{height:1px;background:var(--line);margin:14px 0}
 
 /* round countdown */
@@ -73,3 +73,11 @@ button.def.wrong{border-color:var(--bad); background:var(--bad-bg)} button.def.w
 .timer .tbar i{display:block; height:100%; background:var(--accent); transition:width .25s linear}
 .timer.low .tlabel{color:var(--bad)} .timer.low .tbar i{background:var(--bad)}
 .timer.big{font-size:1.9rem; gap:10px} .timer.big .tbar{height:16px}   /* projector-sized on the host screen */
+
+/* breach meter */
+.meters{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+.meter{border:1px solid var(--line); border-radius:14px; padding:14px 16px; background:var(--panel-2); display:flex; flex-direction:column; gap:4px}
+.meter .ml{font-size:.8rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.meter .mv{font-size:2.4rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1}
+.meter.hit{border-color:var(--bad); background:var(--bad-bg)} .meter.hit .mv{color:var(--bad)}
+.feedback.impact{font-size:1.1rem}

@@ -1,0 +1,17 @@
+{
+  "name": "risk-ready",
+  "version": "1.0.0",
+  "description": "ISI 315 Week 9 live classroom game: Risk Ready (host + student devices).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "qrcode": "^1.5.3"
+  }
+}

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Stop the Breach: Cloud — Play</title>
+<title>Stop the Breach: Cloud &amp; IoT — Play</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><span class="dot"></span> Stop the Breach: Cloud</div>
+  <div class="brand"><span class="dot"></span> Stop the Breach: Cloud &amp; IoT</div>
   <div id="app" class="stack"></div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -53,7 +53,7 @@ function screenJoin(err){
 
 socket.on("join:ok", d => { joined=true; ME.name=d.name; SEAT={pin:d.pin, name:d.name}; ss.set(KEY+":seat",SEAT); render(); });
 socket.on("join:error", msg => { joined=false; SEAT=null; ss.set(KEY+":seat",null); screenJoin(msg); });
-socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; ME.place=d.place||null; if(joined) render(); });
+socket.on("you", d => { ME.score=d.score; ME.answer=d.answer; ME.place=d.place||null; ME.streak=d.streak||0; ME.streakBonus=!!d.streakBonus; if(joined) render(); });
 socket.on("state", s => { ST=s; ST._at=Date.now(); if(joined){ render(); paintTimer(); } });
 socket.on("host:gone", () => { joined=false; SEAT=null; ss.set(KEY+":seat",null); app.innerHTML="<div class='card stack'><h2>Game ended</h2><p class='muted'>The host closed the game. Refresh to join a new one.</p></div>"; });
 
@@ -72,7 +72,7 @@ function scoreHeader(){ return `<div id="conn" class="note" hidden>Reconnecting�
 
 /* round countdown — the server owns the clock; this only paints it between updates */
 function timerHTML(){ return ST && ST.timer ? `<div class="timer" id="timer"></div>` : ""; }
-function timeUp(){ return !!(ST && ST.timer && ST.timer.locked); }
+function timeUp(){ return !!(ST && ((ST.timer && ST.timer.locked) || ST.votesShown)); }
 function paintTimer(){
   const el=document.getElementById("timer"); if(!el||!ST||!ST.timer) return;
   const t=ST.timer, left=t.running ? Math.max(0, t.remainingMs-(Date.now()-(ST._at||Date.now()))) : t.remainingMs;
@@ -101,10 +101,10 @@ function render(){
     const locked = ME.answer!=null;
     app.innerHTML = `${scoreHeader()}
       <div class="card stack">
-        <span class="kicker ${ST.points===20?'gold':''}">Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
+        <span class="kicker ${ST.points===20?'gold':''}">${ST.act?esc(ST.act)+" · ":""}Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
         <h2>${esc(ST.move)}</h2>
         ${timerHTML()}
-        ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Changed your mind? Tap a different one until time runs out or the host reveals.</div>` : `<p class="muted">Tap the defense that stops this.</p>`}
+        ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>${ST.votesShown?"📊 Votes are in — your answer is locked. Watch the screen.":"Changed your mind? Tap a different one until time runs out or the host reveals."}</div>` : `<p class="muted">${esc((ST.ui&&ST.ui.tap)||"Tap your answer.")}</p>`}
         ${defenseButtons(timeUp(), null)}
       </div>`;
     if(!timeUp()) wireDefense();
@@ -115,7 +115,8 @@ function render(){
     app.innerHTML = `${scoreHeader()}
       <div class="card stack">
         <span class="kicker">Round ${ST.round+1} result</span>
-        <div class="feedback ${ok?'good':'bad'}"><b>${ME.answer? (ok?`✓ ${ME.answer} works! +${ST.points}`:`✗ ${ME.answer} wouldn't stop this`) : "No answer this round"}</b><br>${esc(ST.why)}</div>
+        <div class="feedback ${ok?'good':'bad'}"><b>${ME.answer? (ok?`✓ ${ME.answer} ${esc((ST.ui&&ST.ui.right)||"is right!")} +${ST.points}`:`✗ ${ME.answer} ${esc((ST.ui&&ST.ui.wrong)||"isn't right")}`) : "No answer this round"}</b><br>${esc(ST.why)}</div>
+        ${ME.streakBonus?`<div class="feedback good"><b>🔥 ${ME.streak} in a row — +5 streak bonus!</b></div>`:(ME.streak>=1?`<p class="note">🔥 Streak: ${ME.streak} in a row${ME.streak%3===2?" — one more for a +5 bonus":""}</p>`:"")}
         ${defenseButtons(true, ST.works)}
       </div>`;
     return;
@@ -126,14 +127,14 @@ function render(){
       <div class="card stack"><span class="kicker gold">Bonus · +${ST.points}</span>
         <h2>${esc(ST.prompt)}</h2>
         ${timerHTML()}
-        ${locked?`<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Tap a different one to change it until time runs out or the host scores the bonus.</div>`:`<p class="muted">Pick the one you'd add first.</p>`}
+        ${locked?`<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>Tap a different one to change it until time runs out or the host scores the bonus.</div>`:`<p class="muted">Pick one — any answer earns the bonus. Be ready to defend it.</p>`}
         ${defenseButtons(timeUp(), null)}</div>`;
     if(!timeUp()) wireDefense();
     return;
   }
   if(p==="bonusReveal"){
     app.innerHTML = `${scoreHeader()}<div class="card stack"><span class="kicker gold">Bonus scored</span>
-      <div class="feedback good">${ME.answer?`+${ST.points} for making a choice.`:"No answer — no bonus."} Any defense is defensible; the point is arguing your pick.</div></div>`;
+      <div class="feedback good">${ME.answer?`+${ST.points} for making a choice.`:"No answer — no bonus."} ${esc(ST.note||"")}</div></div>`;
     return;
   }
   if(p==="results"){
@@ -146,7 +147,7 @@ function render(){
     app.innerHTML = `${scoreHeader()}
       <div class="card center stack"><span class="kicker gold">Final</span><div class="big">${ME.score}</div>
         <p class="muted">${placeLine}</p></div>
-      <div class="card stack"><span class="kicker">What really happened</span><p>${esc(ST.reveal)}</p>
+      <div class="card stack"><span class="kicker">${esc(ST.revealTitle)}</span><p>${esc(ST.reveal)}</p>
         <ul class="stack" style="margin:0;padding-left:20px">${ST.lessons.map(([h,b])=>`<li><b>${esc(h)}</b> ${esc(b)}</li>`).join("")}</ul></div>`;
     return;
   }

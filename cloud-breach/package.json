@@ -1,7 +1,7 @@
 {
   "name": "cloud-breach",
   "version": "1.0.0",
-  "description": "ISI 315 Week 9 live classroom cloud-security game (host + student devices).",
+  "description": "ISI 315 Week 9 live classroom game: Stop the Breach: Cloud & IoT (host + student devices).",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
