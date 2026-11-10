@@ -13,6 +13,7 @@ at the same time.
 | 9 · Tue | Stop the Breach: Cloud & IoT (Capital One, Mirai) | `games/cloud-breach.js` |
 | 9 · Thu | Risk Ready | `games/risk-ready.js` |
 | 10 | Risk Desk: Silver Star Mines (Ch 14–15) | `games/risk-desk.js` |
+| 10 · Alternate | Risk Desk: The Web Design Company (Ch 14–15; the company from Case 2 and Lab 2) | `games/risk-desk-web.js` |
 
 Game content was copied verbatim from each game's own app folder.
 
