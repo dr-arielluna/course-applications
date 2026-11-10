@@ -106,6 +106,7 @@ function publicState(room) {
   if (room.phase === "round" || room.phase === "reveal") {
     const r = GAME.rounds[room.round];
     st.move = r.move; st.points = r.points; st.customChoices = !!r.choices; st.act = r.act || "";
+    st.facts = r.facts || null;           // labelled asset / threat / likelihood / consequence
     st.reference = r.reference || null;   // information needed to answer, shown with the question
     st.votesShown = !!room.votesShown; if (room.votesShown && room.phase === "round") st.counts = letterCounts(room);
   }

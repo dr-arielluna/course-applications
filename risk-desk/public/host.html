@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Risk Desk: Silver Star Mines — Host</title>
+<title>Risk Desk: Silver Star Mines · Host</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><span class="dot"></span> Risk Desk: Silver Star Mines — Host</div>
+  <div class="brand"><span class="dot"></span> Risk Desk: Silver Star Mines · Host</div>
   <div id="app" class="stack"></div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -70,6 +70,15 @@ function referenceBlock(compact){
 /* "C · Transfer" — a letter plus what it means, so answers read on their own */
 function choiceLabel(id){ const d=(ST.defenses||[]).find(x=>x.id===id); return d ? `${id} · ${d.name}` : id; }
 
+/* labelled facts for a round (asset, threat, existing controls, likelihood, consequence) */
+function factsBlock(){
+  const F=ST.facts; if(!F||!F.length) return "";
+  return `<div class="facts">` + F.map(x=>{
+    const rating = /^(likelihood|consequence)$/i.test(x.label);
+    return `<div class="fact${rating?" rating":""}"><span class="fl">${esc(x.label)}</span><span class="fv">${rating?`<b>${esc(x.value)}</b>`:esc(x.value)}${x.note?` <span class="fn">(${esc(x.note)})</span>`:""}</span></div>`;
+  }).join("") + `</div>`;
+}
+
 function board(){
   if(!ST.scoreboard.length) return "";
   return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${t.rank===1&&t.score>0?'win':''}"><td>${t.tied?"T-":""}${t.rank}</td><td>${esc(t.name)}${t.streak>=3?` <span title="${t.streak} in a row">🔥${t.streak}</span>`:""}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
@@ -90,7 +99,7 @@ function paintTimer(){
   const el=document.getElementById("timer"); if(!el||!ST||!ST.timer) return;
   const t=ST.timer, left=t.running ? Math.max(0, t.remainingMs-(Date.now()-(ST._at||Date.now()))) : t.remainingMs;
   const s=Math.ceil(left/1000), clock=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
-  const label = t.locked ? "⏰ Time's up — answers are locked"
+  const label = t.locked ? "⏰ Time's up. Answers are locked."
               : t.held ? `✓ Everyone has answered · ${clock} left`
               : t.paused ? `⏸ Paused · ${clock}` : `⏱ ${clock}`;
   el.className = "timer big" + ((t.locked || (t.running && s<=15)) ? " low" : "");
@@ -135,10 +144,11 @@ function render(){
           <span class="muted">${ST.answered} of ${ST.playerCount} answered</span></div>
         ${revealed?"":timerHTML()}
         <h2>${esc(ST.move)}</h2>
+        ${factsBlock()}
         ${referenceBlock(false)}
         ${!revealed ? defenseGrid() : ""}
-        ${revealed ? `${impactBlock()}<div class="feedback good"><b>Answer: ${ST.works.map(w=>esc(choiceLabel(w))).join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss</b> — ${esc(ST.discuss)}</div>`:""}${ST.lesson?`<p class="note">📘 ${esc(ST.lesson)}</p>`:""}`
-                   : ST.votesShown ? `<div class="feedback"><b>📊 Votes are in — answers are locked.</b> How did the class split?</div>${countsBlock()}`
+        ${revealed ? `${impactBlock()}<div class="feedback good"><b>Answer: ${ST.works.map(w=>esc(choiceLabel(w))).join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss:</b> ${esc(ST.discuss)}</div>`:""}${ST.lesson?`<p class="note">📘 ${esc(ST.lesson)}</p>`:""}`
+                   : ST.votesShown ? `<div class="feedback"><b>📊 Votes are in. Answers are locked.</b> How did the class split?</div>${countsBlock()}`
                    : `<p class="muted">${esc((ST.ui&&ST.ui.choosing)||"Students are choosing on their devices…")}</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
         <div class="hr"></div>
         <div class="row spread">
@@ -183,12 +193,12 @@ function render(){
       return `<div class="medal"><span class="m">${medals[r]}</span><span class="mn">${g.map(t=>esc(t.name)).join("<br>")}</span><span class="ms">${g.length>1?"T-":""}${ord(r)} · ${g[0].score}</span></div>`;
     }).join("") : "";
     const banner = !champs.length
-      ? `<h1>No points this round</h1><p class="muted">Nobody scored — try another round?</p>`
+      ? `<h1>No points this round</h1><p class="muted">Nobody scored. Try another round?</p>`
       : champs.length === 1
         ? `<h1>🏆 ${esc(champs[0].name)}</h1><div><span class="pill gold">${esc(ST.champion)}</span></div>`
         : `<h1>🏆 It's a tie!</h1><h2 style="margin:0">${esc(names(champs.map(c=>c.name)))}</h2><div><span class="pill gold">Co-champions · ${esc(ST.champion)}</span></div>`;
     app.innerHTML = `
-      <div class="card center stack"><span class="kicker gold">${champs.length>1?"Champions — tied":"Champions"}</span>
+      <div class="card center stack"><span class="kicker gold">${champs.length>1?"Champions (tied)":"Champions"}</span>
         ${banner}
         ${podium?`<div class="podium">${podium}</div>`:""}</div>
       ${ST.meters&&ST.meters.length?`<div class="card stack"><span class="kicker">Final damage</span>${metersBlock(true)}</div>`:""}
