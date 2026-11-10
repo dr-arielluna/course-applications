@@ -81,3 +81,17 @@ button.def.wrong{border-color:var(--bad); background:var(--bad-bg)} button.def.w
 .meter .mv{font-size:2.4rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1}
 .meter.hit{border-color:var(--bad); background:var(--bad-bg)} .meter.hit .mv{color:var(--bad)}
 .feedback.impact{font-size:1.1rem}
+
+/* reference panel (e.g., the risk matrix) */
+.ref{border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--panel-2); display:flex; flex-direction:column; gap:8px}
+.reftable{overflow-x:auto}
+.reftable table{border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums}
+.reftable th,.reftable td{border:1px solid var(--line); padding:6px 8px; text-align:center; font-size:.95rem}
+.reftable thead th{font-size:.82rem; color:var(--muted)} .reftable tbody th{text-align:left; white-space:nowrap}
+.reftable td{font-weight:800}
+.lvl-low{background:var(--good-bg); color:var(--good)} .lvl-medium{background:var(--panel); color:var(--accent)}
+.lvl-high{background:var(--gold-bg); color:var(--gold)} .lvl-extreme{background:var(--bad-bg); color:var(--bad)}
+/* phone version of the reference table: all six columns fit in ~300px */
+.reftable.compact table{table-layout:fixed} .reftable.compact th,.reftable.compact td{padding:5px 2px; font-size:.78rem}
+.reftable.compact thead th{font-size:.64rem; padding:5px 0; letter-spacing:-.01em} .reftable.compact thead th:first-child{width:64px}
+.reftable.compact tbody th{padding-left:5px; font-size:.74rem}

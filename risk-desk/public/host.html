@@ -52,6 +52,21 @@ function impactBlock(){
     : `<div class="feedback good impact"><b>🛡 The class blocked it.</b><br>${i.correct} of ${i.total} teams chose a working defense.${i.text?" "+esc(i.text):""}</div>`;
 }
 
+/* reference panel: anything a round needs students to know (e.g., the risk matrix) travels with the question */
+function referenceBlock(compact){
+  const R=ST.reference; if(!R) return "";
+  const cls=v=>"lvl-"+String(v).toLowerCase();
+  let body="";
+  if(R.cols&&R.rows){
+    const heads=(compact&&R.short)?R.short:R.cols;
+    body=`<div class="reftable${compact?" compact":""}"><table><thead><tr><th>${compact?"":"Likelihood ↓ · Consequence →"}</th>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>`+
+      R.rows.map(r=>`<tr><th>${esc(compact&&r.short?r.short:r.label)}</th>${r.cells.map(c=>`<td class="${cls(c)}">${esc(compact?String(c)[0]:c)}</td>`).join("")}</tr>`).join("")+`</tbody></table></div>`;
+    if(compact) body+=`<p class="note" style="margin:4px 0 0">L = Low · M = Medium · H = High · E = Extreme</p>`;
+  }
+  if(R.text) body+=`<p style="margin:0">${esc(R.text)}</p>`;
+  return `<div class="ref"><span class="kicker">📋 ${esc(R.title||"Reference")}</span>${body}${R.note?`<p class="note" style="margin:6px 0 0">${esc(R.note)}</p>`:""}</div>`;
+}
+
 function board(){
   if(!ST.scoreboard.length) return "";
   return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${t.rank===1&&t.score>0?'win':''}"><td>${t.tied?"T-":""}${t.rank}</td><td>${esc(t.name)}${t.streak>=3?` <span title="${t.streak} in a row">🔥${t.streak}</span>`:""}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
@@ -117,6 +132,7 @@ function render(){
           <span class="muted">${ST.answered} of ${ST.playerCount} answered</span></div>
         ${revealed?"":timerHTML()}
         <h2>${esc(ST.move)}</h2>
+        ${referenceBlock(false)}
         ${ST.customChoices && !revealed ? defenseGrid() : ""}
         ${revealed ? `${impactBlock()}<div class="feedback good"><b>Answer: ${ST.works.join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss</b> — ${esc(ST.discuss)}</div>`:""}${ST.lesson?`<p class="note">📘 ${esc(ST.lesson)}</p>`:""}`
                    : ST.votesShown ? `<div class="feedback"><b>📊 Votes are in — answers are locked.</b> How did the class split?</div>${countsBlock()}`

@@ -32,9 +32,23 @@ const SCADA = [
   { id: "C", name: "Replace the whole SCADA system", desc: "new hardware and software across the mine." },
   { id: "D", name: "Accept the risk as it is", desc: "management signs off on the current state." },
 ];
+/* Risk matrix (Table 14.4), shown on screen with every "Rate the risk" round so the game is self-contained. */
+const RISK_MATRIX = {
+  title: "Risk matrix — find the likelihood row and the consequence column",
+  cols: ["Insignificant", "Minor", "Moderate", "Major", "Catastrophic", "Doomsday"],
+  short: ["Insig", "Minor", "Mod", "Major", "Cat", "Doom"],
+  rows: [
+    { label: "Almost certain", short: "Certain", cells: ["High", "High", "Extreme", "Extreme", "Extreme", "Extreme"] },
+    { label: "Likely", short: "Likely", cells: ["Medium", "High", "High", "Extreme", "Extreme", "Extreme"] },
+    { label: "Possible", short: "Possible", cells: ["Low", "Medium", "High", "Extreme", "Extreme", "Extreme"] },
+    { label: "Unlikely", short: "Unlikely", cells: ["Low", "Low", "Medium", "High", "Extreme", "Extreme"] },
+    { label: "Rare", short: "Rare", cells: ["Low", "Low", "Medium", "High", "High", "Extreme"] },
+  ],
+  note: "Rows = likelihood · Columns = consequence. Source: Table 14.4.",
+};
 const GAME = {
   story:
-    "You've been hired as the security analyst for Silver Star Mines, the local operation of a global mining company. Its once-isolated mine-control (SCADA) systems are now connected to the company network — and potentially the internet. Management will accept only Moderate or lower risks. ACT 1 — Rate each risk with Table 14.4. ACT 2 — Choose how to treat it. ACT 3 — Classify the controls you'd pick. ACT 4 — Keep the controls working. Every round the class gets wrong, a risk goes unmanaged — watch the meters.",
+    "You've been hired as the security analyst for Silver Star Mines, the local operation of a global mining company. Its once-isolated mine-control (SCADA) systems are now connected to the company network — and potentially the internet. Management will accept only Medium or lower risks. ACT 1 — Rate each risk with the risk matrix shown on screen. ACT 2 — Choose how to treat it. ACT 3 — Classify the controls you'd pick. ACT 4 — Keep the controls working. Every round the class gets wrong, a risk goes unmanaged — watch the meters.",
   roundSeconds: 90,
   ui: { choosing: "Teams are deciding on their devices…", tap: "Tap your answer.", right: "is right!", wrong: "isn't right" },
   meters: [
@@ -49,16 +63,16 @@ const GAME = {
     { id: "E", name: "Reduce likelihood", desc: "make it less likely to happen — firewalls, access tokens, password rules." },
   ],
   rounds: [
-    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "The internet router faces outside hacker attacks; its only control is an admin password. The analyst rates the likelihood Possible and the consequence Moderate. Using Table 14.4, the level of risk is…",
-      works: ["C"], points: 10, impact: { meter: "losses", amount: 150000 },
+    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "The internet router faces outside hacker attacks; its only control is an admin password. The analyst rates the likelihood Possible and the consequence Moderate. Using the risk matrix, the level of risk is…",
+      reference: RISK_MATRIX, works: ["C"], points: 10, impact: { meter: "losses", amount: 150000 },
       why: "Possible × Moderate = High (Table 14.4). It's the textbook's own risk-register example (Table 14.5) — and the treatment turned out to be cheap: tighten the router configuration.",
       discuss: "High, but cheap to fix. Why would management fix this before a risk rated higher but costly to treat?" },
-    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "The integrity of Silver Star's stored files and databases — production results, contracts, audit records — faces corruption, theft, and loss. Existing controls: a firewall and policies. Likelihood: Possible. Consequence: Major.",
-      works: ["D"], points: 10, impact: { meter: "losses", amount: 400000 },
-      why: "Possible × Major = Extreme — the only Extreme risk in Silver Star's register (Table 14.6). Management accepts only Moderate or lower, so this one must be treated.",
+    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "The integrity of Silver Star's stored files and databases — production results, contracts, audit records — faces corruption, theft, and loss. Existing controls: a firewall and policies. Likelihood: Possible. Consequence: Major. What is the level of risk?",
+      reference: RISK_MATRIX, works: ["D"], points: 10, impact: { meter: "losses", amount: 400000 },
+      why: "Possible × Major = Extreme — the only Extreme risk in Silver Star's register (Table 14.6). Management accepts only Medium or lower, so this one must be treated.",
       discuss: "The firewall and policies were already in place. Why do 'existing controls' still leave a risk this high?" },
-    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "Someone makes an unauthorized change to the SCADA control system that runs the mine. Layered firewalls and servers protect it, so the likelihood is only Rare — but the consequence would be Major.",
-      works: ["C"], points: 20, impact: { meter: "downtime", amount: 720 },
+    { act: "Act 1 · Rate the risk", choices: LEVELS, move: "Someone makes an unauthorized change to the SCADA control system that runs the mine. Layered firewalls and servers protect it, so the likelihood is only Rare — but the consequence would be Major. What is the level of risk?",
+      reference: RISK_MATRIX, works: ["C"], points: 20, impact: { meter: "downtime", amount: 720 },
       why: "Rare × Major = High (Table 14.4) — and it's Silver Star's #1 priority (Table 14.6). A rare event still matters when the consequence is severe. End of Act 1 — double points.",
       discuss: "This is rated High but ranked #1, above an Extreme risk. Why might safety and legal records outrank a higher rating?" },
     { act: "Act 2 · Treat the risk", move: "Silver Star buys a cyber-insurance policy that pays for recovery and legal costs if its stored data is corrupted or stolen.",
@@ -97,7 +111,7 @@ const GAME = {
       works: ["C"], points: 10, impact: { meter: "downtime", amount: 48 },
       why: "Change and configuration management: review each change for its impact, and keep track of every system's configuration (§15.5). Testing first trades a little exposure time for stability — a management decision.",
       discuss: "Test the patch first, or install it now? Who should make that call — and what does it depend on?" },
-    { act: "Act 4 · Keep it working", choices: SCADA, move: "The #1 risk: the SCADA nodes run old operating systems with known flaws and CAN'T be patched — the mine-control software won't run on newer versions. What does the textbook recommend?",
+    { act: "Act 4 · Keep it working", choices: SCADA, move: "The #1 risk: the SCADA nodes run old operating systems with known flaws and CAN'T be patched — the mine-control software won't run on newer versions. Two facts: the nodes were designed to run with no network at all (the link only adds remote monitoring), and their network traffic is highly regular and predictable. Which control fits best?",
       works: ["B"], points: 20, impact: { meter: "downtime", amount: 1440 },
       why: "Protect the link, not the node: SCADA traffic is highly predictable, so an intrusion-detection system can spot attacks reliably and automatically sever the network connection. The nodes were designed to run without it — all that's lost is remote monitoring (§15.6). Final round — double points.",
       discuss: "The book's answer accepts losing the network connection in an attack. Why is that an acceptable price here?" },

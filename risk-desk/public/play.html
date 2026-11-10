@@ -89,6 +89,21 @@ setInterval(paintTimer, 250);
 function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
 function names(list){ if(list.length>3) return `${list.length} other teams`; return list.length<2 ? (list[0]||"") : list.slice(0,-1).join(", ")+" & "+list[list.length-1]; }
 
+/* reference panel: anything a round needs students to know (e.g., the risk matrix) travels with the question */
+function referenceBlock(compact){
+  const R=ST.reference; if(!R) return "";
+  const cls=v=>"lvl-"+String(v).toLowerCase();
+  let body="";
+  if(R.cols&&R.rows){
+    const heads=(compact&&R.short)?R.short:R.cols;
+    body=`<div class="reftable${compact?" compact":""}"><table><thead><tr><th>${compact?"":"Likelihood ↓ · Consequence →"}</th>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>`+
+      R.rows.map(r=>`<tr><th>${esc(compact&&r.short?r.short:r.label)}</th>${r.cells.map(c=>`<td class="${cls(c)}">${esc(compact?String(c)[0]:c)}</td>`).join("")}</tr>`).join("")+`</tbody></table></div>`;
+    if(compact) body+=`<p class="note" style="margin:4px 0 0">L = Low · M = Medium · H = High · E = Extreme</p>`;
+  }
+  if(R.text) body+=`<p style="margin:0">${esc(R.text)}</p>`;
+  return `<div class="ref"><span class="kicker">📋 ${esc(R.title||"Reference")}</span>${body}${R.note?`<p class="note" style="margin:6px 0 0">${esc(R.note)}</p>`:""}</div>`;
+}
+
 function render(){
   if(!joined){ screenJoin(); return; }
   if(!ST){ app.innerHTML="<div class='card'>Connecting…</div>"; return; }
@@ -103,6 +118,7 @@ function render(){
       <div class="card stack">
         <span class="kicker ${ST.points===20?'gold':''}">${ST.act?esc(ST.act)+" · ":""}Round ${ST.round+1} of ${ST.total}${ST.points===20?" · double points":""}</span>
         <h2>${esc(ST.move)}</h2>
+        ${referenceBlock(true)}
         ${timerHTML()}
         ${locked? `<div class="feedback"><b>Your pick: ${esc(ME.answer)}</b><br>${ST.votesShown?"📊 Votes are in — your answer is locked. Watch the screen.":"Changed your mind? Tap a different one until time runs out or the host reveals."}</div>` : `<p class="muted">${esc((ST.ui&&ST.ui.tap)||"Tap your answer.")}</p>`}
         ${defenseButtons(timeUp(), null)}
