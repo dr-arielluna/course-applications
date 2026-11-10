@@ -67,6 +67,9 @@ function referenceBlock(compact){
   return `<div class="ref"><span class="kicker">📋 ${esc(R.title||"Reference")}</span>${body}${R.note?`<p class="note" style="margin:6px 0 0">${esc(R.note)}</p>`:""}</div>`;
 }
 
+/* "C · Transfer" — a letter plus what it means, so answers read on their own */
+function choiceLabel(id){ const d=(ST.defenses||[]).find(x=>x.id===id); return d ? `${id} · ${d.name}` : id; }
+
 function board(){
   if(!ST.scoreboard.length) return "";
   return `<table class="lb"><tbody>` + ST.scoreboard.map((t,i)=>`<tr class="${t.rank===1&&t.score>0?'win':''}"><td>${t.tied?"T-":""}${t.rank}</td><td>${esc(t.name)}${t.streak>=3?` <span title="${t.streak} in a row">🔥${t.streak}</span>`:""}</td><td class="s">${t.score}</td></tr>`).join("") + `</tbody></table>`;
@@ -133,8 +136,8 @@ function render(){
         ${revealed?"":timerHTML()}
         <h2>${esc(ST.move)}</h2>
         ${referenceBlock(false)}
-        ${ST.customChoices && !revealed ? defenseGrid() : ""}
-        ${revealed ? `${impactBlock()}<div class="feedback good"><b>Answer: ${ST.works.join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss</b> — ${esc(ST.discuss)}</div>`:""}${ST.lesson?`<p class="note">📘 ${esc(ST.lesson)}</p>`:""}`
+        ${!revealed ? defenseGrid() : ""}
+        ${revealed ? `${impactBlock()}<div class="feedback good"><b>Answer: ${ST.works.map(w=>esc(choiceLabel(w))).join(" or ")}</b><br>${esc(ST.why)}</div>${countsBlock()}${ST.discuss?`<div class="feedback"><b>💬 Discuss</b> — ${esc(ST.discuss)}</div>`:""}${ST.lesson?`<p class="note">📘 ${esc(ST.lesson)}</p>`:""}`
                    : ST.votesShown ? `<div class="feedback"><b>📊 Votes are in — answers are locked.</b> How did the class split?</div>${countsBlock()}`
                    : `<p class="muted">${esc((ST.ui&&ST.ui.choosing)||"Students are choosing on their devices…")}</p><div class="bar"><i style="width:${ST.playerCount?Math.round(ST.answered/ST.playerCount*100):0}%"></i></div>`}
         <div class="hr"></div>

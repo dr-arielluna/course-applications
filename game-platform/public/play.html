@@ -104,6 +104,9 @@ function referenceBlock(compact){
   return `<div class="ref"><span class="kicker">📋 ${esc(R.title||"Reference")}</span>${body}${R.note?`<p class="note" style="margin:6px 0 0">${esc(R.note)}</p>`:""}</div>`;
 }
 
+/* "C · Transfer" — a letter plus what it means, so answers read on their own */
+function choiceLabel(id){ const d=(ST.defenses||[]).find(x=>x.id===id); return d ? `${id} · ${d.name}` : id; }
+
 function render(){
   if(!joined){ screenJoin(); return; }
   if(!ST){ app.innerHTML="<div class='card'>Connecting…</div>"; return; }
@@ -131,7 +134,7 @@ function render(){
     app.innerHTML = `${scoreHeader()}
       <div class="card stack">
         <span class="kicker">Round ${ST.round+1} result</span>
-        <div class="feedback ${ok?'good':'bad'}"><b>${ME.answer? (ok?`✓ ${ME.answer} ${esc((ST.ui&&ST.ui.right)||"is right!")} +${ST.points}`:`✗ ${ME.answer} ${esc((ST.ui&&ST.ui.wrong)||"isn't right")}`) : "No answer this round"}</b><br>${esc(ST.why)}</div>
+        <div class="feedback ${ok?'good':'bad'}"><b>${ME.answer? (ok?`✓ ${esc(choiceLabel(ME.answer))} ${esc((ST.ui&&ST.ui.right)||"is right!")} +${ST.points}`:`✗ ${esc(choiceLabel(ME.answer))} ${esc((ST.ui&&ST.ui.wrong)||"isn't right")}<br>Answer: ${ST.works.map(w=>esc(choiceLabel(w))).join(" or ")}`) : `No answer this round — the answer: ${ST.works.map(w=>esc(choiceLabel(w))).join(" or ")}`}</b><br>${esc(ST.why)}</div>
         ${ME.streakBonus?`<div class="feedback good"><b>🔥 ${ME.streak} in a row — +5 streak bonus!</b></div>`:(ME.streak>=1?`<p class="note">🔥 Streak: ${ME.streak} in a row${ME.streak%3===2?" — one more for a +5 bonus":""}</p>`:"")}
         ${defenseButtons(true, ST.works)}
       </div>`;
