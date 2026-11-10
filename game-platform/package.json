@@ -1,0 +1,17 @@
+{
+  "name": "game-platform",
+  "version": "1.0.0",
+  "description": "ISI 315 game platform: every live classroom game on one server; the host picks which to run.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "qrcode": "^1.5.3"
+  }
+}

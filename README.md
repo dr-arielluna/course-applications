@@ -5,6 +5,7 @@ repo root carries the shared Render blueprint.
 
 | App | Folder | What it is |
 |---|---|---|
+| **ISI 315 Games (platform)** | [`game-platform/`](game-platform/) | **One address for every live game.** The instructor picks the game from a menu; students join by PIN. Includes all six games below on one shared engine. |
 | Stop the Breach | [`stop-the-breach/`](stop-the-breach/) | ISI 315 Week 6 — live, multi-device security game (Node + Socket.IO). |
 | Signature Lab | [`signature-lab/`](signature-lab/) | ISI 315 Week 6 — write Snort-style IDS rules against simulated traffic; see catches, misses, and false alarms, with a challenge mode (§8.3 & §8.9). |
 | Firewall Lab | [`firewall-lab/`](firewall-lab/) | ISI 315 Week 6 — build a default-deny firewall rulebase (ordered, first-match-wins) and test it against a policy; spot holes and shadowed rules (§9.2–9.4). |
@@ -14,9 +15,9 @@ repo root carries the shared Render blueprint.
 | Risk Ready | [`risk-ready/`](risk-ready/) | ISI 315 Week 9 (Thursday) — live judge-and-decide game: name the risk term, choose likelihood vs. consequence, pick the risk-assessment approach. Risk meter, streak bonus, and vote reveal. |
 | Risk Desk: Silver Star Mines | [`risk-desk/`](risk-desk/) | ISI 315 Week 10 — live game on Chapters 14–15 through the textbook's Silver Star Mines case: rate risks with Table 14.4, choose a treatment, classify controls, and keep them working. |
 
-The blueprint defines **all eight** services, so one Render deploy creates
-`stop-the-breach`, `signature-lab`, `firewall-lab`, `who-regulates-you`, `checkout-breach`,
-`cloud-breach`, `risk-ready`, and `risk-desk`, each from its own subfolder.
+The blueprint defines **nine** services: the `isi315-games` platform (every game, one
+address), the two labs, and the six individual game apps (`stop-the-breach`, `who-regulates-you`,
+`checkout-breach`, `cloud-breach`, `risk-ready`, `risk-desk`), each from its own subfolder.
 
 ---
 

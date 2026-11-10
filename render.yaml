@@ -98,3 +98,16 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  # One service for every live game — the host picks which one to run.
+  - type: web
+    name: isi315-games
+    runtime: node
+    plan: free
+    rootDir: game-platform
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
