@@ -86,3 +86,15 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+
+  - type: web
+    name: risk-desk
+    runtime: node
+    plan: free
+    rootDir: risk-desk
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

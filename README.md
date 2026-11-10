@@ -12,10 +12,11 @@ repo root carries the shared Render blueprint.
 | Stop the Breach: Checkout | [`checkout-breach/`](checkout-breach/) | ISI 315 Week 8 — live, multi-device software-security game based on British Airways 2018: stop a stolen partner login, a plaintext admin password, a tampered checkout script, and an XSS attempt (SRI, CSP, output encoding). |
 | Stop the Breach: Cloud & IoT | [`cloud-breach/`](cloud-breach/) | ISI 315 Week 9 (Tuesday) — two-act live game: Capital One 2019 (cloud, shared responsibility), then a Mirai-style botnet on a smart campus (IoT). Damage meters, streak bonus, and vote reveal. |
 | Risk Ready | [`risk-ready/`](risk-ready/) | ISI 315 Week 9 (Thursday) — live judge-and-decide game: name the risk term, choose likelihood vs. consequence, pick the risk-assessment approach. Risk meter, streak bonus, and vote reveal. |
+| Risk Desk: Silver Star Mines | [`risk-desk/`](risk-desk/) | ISI 315 Week 10 — live game on Chapters 14–15 through the textbook's Silver Star Mines case: rate risks with Table 14.4, choose a treatment, classify controls, and keep them working. |
 
-The blueprint defines **all seven** services, so one Render deploy creates
+The blueprint defines **all eight** services, so one Render deploy creates
 `stop-the-breach`, `signature-lab`, `firewall-lab`, `who-regulates-you`, `checkout-breach`,
-`cloud-breach`, and `risk-ready`, each from its own subfolder.
+`cloud-breach`, `risk-ready`, and `risk-desk`, each from its own subfolder.
 
 ---
 
